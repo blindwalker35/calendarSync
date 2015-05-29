@@ -1,4 +1,4 @@
-package gson.objects;
+package google.gson;
 
 import java.util.List;
 

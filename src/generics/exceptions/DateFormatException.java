@@ -1,4 +1,5 @@
-package exceptions;
+package generics.exceptions;
+
 
 public class DateFormatException extends Exception{
 	public DateFormatException(){super();}

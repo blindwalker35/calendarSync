@@ -1,4 +1,9 @@
-package calendars;
+package google.calendar;
+
+import generics.exceptions.DateFormatException;
+import generics.objects.CSMONTHS;
+import google.gson.CalendarListEntryJSON;
+import google.gson.CalendarListJSON;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -27,10 +32,6 @@ import com.google.api.services.calendar.Calendar.Calendars.Get;
 import com.google.api.services.calendar.model.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-
-import exceptions.DateFormatException;
-import gson.objects.CalendarListEntryJSON;
-import gson.objects.CalendarListJSON;
 
 /* Organization of this object looks like the folowing:
  * 
@@ -91,7 +92,7 @@ import gson.objects.CalendarListJSON;
  *	Consists of all the ACL Resources applied to a specific calendar.
  * */
 
-public class ToshieCalendar{
+public class GoogleCalendar{
 
 	private final String APPLICATION_NAME = "TEST_APPLICATION";
 	private Calendar calendar;
@@ -99,23 +100,20 @@ public class ToshieCalendar{
 	private final int MAX_YEAR = 2020;
 	private final int YEAR_SUBTRACTION_CONSTANT = 1900;
 
-	public enum MONTHS{
-		JAN(1), FEB(2), MAR(3), APR(4), MAY(5), JUN(6), JUL(7), AUG(8), SEP(9), OCT(10), NOV(11), DEC(12);
-
-		private MONTHS(final int month)
-		{
-			this.month = month;
-		}
-		private int month;
-		public int getMonth(){return this.month;}
-	};
-
-
-	public ToshieCalendar(String clientID, String clientSecret) throws GeneralSecurityException, IOException
+	public GoogleCalendar(String clientID, String clientSecret) throws GeneralSecurityException, IOException
 	{
 		setup(clientID, clientSecret);
 	}
 
+	/**
+	 * Setup the Google Calendar credentials to connect and retrieve data.
+	 * 
+	 * @param clientID		The Client ID is obtained from the Google Developer's Console
+	 * @param clientSecret 	The Client Secret is obtained from the Google Developer's Console
+	 * @throws GeneralSecurityException	Thrown if there is an error generating an HTTP request to Google.
+	 * @throws IOException	Thrown if there are any errors getting a response from Google.
+	 */
+	
 	private void setup(String clientID, String clientSecret) throws GeneralSecurityException, IOException
 	{
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
@@ -154,9 +152,12 @@ public class ToshieCalendar{
 
 		System.out.println("Done authentication and authorization...");
 	}
-
-	/* Gets all calendars for user
-	 * */
+	
+	/**
+	 * Gets all calendars for the user specified during setup
+	 * 
+	 * @return The Java object containing calendar information
+	 */
 	public CalendarListJSON getCalendars()
 	{
 		try {
@@ -171,9 +172,15 @@ public class ToshieCalendar{
 		}
 	}
 
-	/* Gets all events listed on a calendar for a given day of the year
+	/** 
+	 * Gets all events for a given day of the year that are on the account's calendar.
+	 * 
+	 * @param month	The month of the year to look for events.
+	 * @param day	The day of the month to look for events.
+	 * @param year	The year to look for events.
+	 * @return The list of events for the specified date.
 	 * */
-	public List<Event> getEventsForDay(MONTHS month, int day, int year) throws DateFormatException, IOException
+	public List<Event> getEventsForDay(CSMONTHS month, int day, int year) throws DateFormatException, IOException
 	{
 		if(!isValidDay(month, day, year))
 		{
@@ -184,7 +191,23 @@ public class ToshieCalendar{
 		return null;
 	}
 
-	public List<Event> getEventsForDayOnCalendar(MONTHS month, int day, int year, String calendarName) throws DateFormatException, JsonSyntaxException, IOException, ParseException
+	/**
+	 * Gets all events listed on a calendar for a given day of the year.
+	 * 
+	 * @param month	The month of the year to look for events.
+	 * @param day	The day of the month to look for events.
+	 * @param year	The year to look for events.
+	 * @param calendarName	The name of the calendar to look at events for.
+	 *  The value for this is found in the Calendar Details by navigating in Google Calendar from
+	 *  Calendar Settings--> Calendar Address --> Calendar ID.
+	 * @return A list of all events occurring on the provided date and calendar.
+	 * @throws DateFormatException Thrown if invalid dates are provided.
+	 * @throws JsonSyntaxException Thrown if the JSON cannot be parsed into the provided class.
+	 * @throws IOException 	Thrown if various HTTP requests cannot be completed.
+	 * @throws ParseException	Thrown if the provided dates cannot be parsed into the expected date format.
+	 */
+	@SuppressWarnings("deprecation")
+	public List<Event> getEventsForDayOnCalendar(CSMONTHS month, int day, int year, String calendarName) throws DateFormatException, JsonSyntaxException, IOException, ParseException
 	{
 		//Check to make sure the provided values are valid
 		if(!isValidDay(month, day, year))
@@ -200,22 +223,11 @@ public class ToshieCalendar{
 
 		events = this.calendar.events().list(calendarListEntry.getID()).setPageToken(pageToken).execute();
 
-		//Create start date based on provided values
-		TimeZone timeZone = TimeZone.getTimeZone(events.getTimeZone()); //Create timezone object based on calendar's timezone
-
 		//Year is based on 1900, Month is 0 indexed. Have to use deprecated Date due to Google's constructors for DateTime object
 		Date startDate = new Date(year-this.YEAR_SUBTRACTION_CONSTANT, month.getMonth()-1, day);
-		startDate.setHours(0);
-		startDate.setMinutes(0);
-		startDate.setSeconds(0);
-		DateTime startDateTime = new DateTime(startDate, timeZone);  //Create DateTime object containing the start date and timezone
 
 		//Create end date based on provided values
 		Date endDate = datePlusOne(month, day, year);
-		endDate.setHours(0);
-		endDate.setMinutes(0);
-		endDate.setSeconds(0);
-		DateTime endDateTime = new DateTime(endDate, timeZone);
 
 		/* Iterate through all events on calendar to verify if event occurs between given dates
 		 * */
@@ -231,8 +243,15 @@ public class ToshieCalendar{
 
 	}
 
-	/* Check if the provided event occurs between the provided start and end dates
-	 * */
+	/**
+	 * Check if the provided event occurs between the provided start and end dates
+	 * 
+	 * @param startDate The start date to compare against. If the provided event starts before this date, method will return false.
+	 * @param endDate The end date to compare against. If the provided event ends after this date, method will return false.
+	 * @param event The event to evaluate. The event must have at least a start date. If no end date exists, then method will return false.
+	 * @return Returns the evaluation whether the provided event starts after the provided start date.
+	 * @throws ParseException
+	 */
 	private boolean isEventBetweenDates(Date startDate, Date endDate, Event event) throws ParseException
 	{
 		EventDateTime eventStart = null, eventEnd = null;
@@ -272,21 +291,27 @@ public class ToshieCalendar{
 		}
 		return false;
 	}
-	
-	/* Validate whether a given month, day, and year combination is valid. This also accounts for leap years.
-	 * */
-	private boolean isValidDay(MONTHS month, int day, int year)
+
+	/**
+	 * Validate whether a given month, day, and year combination is valid. This also accounts for leap years.
+	 * 
+	 * @param month	The month to validate.
+	 * @param day	The day to validate.
+	 * @param year	The year to validate.
+	 * @return	Returns a boolean value whether the provided month, day, and year is a valid date.
+	 */
+	private boolean isValidDay(CSMONTHS month, int day, int year)
 	{
 		if(year < this.MIN_YEAR || year > this.MAX_YEAR){return false;}
 		if(day < 1){return false;}
 
-		if(month == MONTHS.JAN)
+		if(month == CSMONTHS.JAN)
 		{
 			if(day > 31)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.FEB)
+		}else if(month == CSMONTHS.FEB)
 		{
 			int feb_max = 28;
 			if((year%4)==0)
@@ -297,61 +322,61 @@ public class ToshieCalendar{
 			{
 				return false;
 			}
-		}else if(month == MONTHS.MAR)
+		}else if(month == CSMONTHS.MAR)
 		{
 			if(day > 31)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.APR)
+		}else if(month == CSMONTHS.APR)
 		{
 			if(day > 30)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.MAY)
+		}else if(month == CSMONTHS.MAY)
 		{
 			if(day > 31)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.JUN)
+		}else if(month == CSMONTHS.JUN)
 		{
 			if(day > 30)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.JUL)
+		}else if(month == CSMONTHS.JUL)
 		{
 			if(day > 31)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.AUG)
+		}else if(month == CSMONTHS.AUG)
 		{
 			if(day > 31)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.SEP)
+		}else if(month == CSMONTHS.SEP)
 		{
 			if(day > 30)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.OCT)
+		}else if(month == CSMONTHS.OCT)
 		{
 			if(day > 31)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.NOV)
+		}else if(month == CSMONTHS.NOV)
 		{
 			if(day > 30)
 			{
 				return false;
 			}
-		}else if(month == MONTHS.DEC)
+		}else if(month == CSMONTHS.DEC)
 		{
 			if(day > 31)
 			{
@@ -360,18 +385,25 @@ public class ToshieCalendar{
 		}
 		return true;
 	}
-
-	/*
+	
+	/**
 	 * There isn't a particularly good built in way to increment a date in an object class - would have to use
 	 * Java Calendar object - but due to Google package imports, would have to provide full package name to use
 	 * the Java Calendar instead of Google Calendar. Out of preference, creating this unnecessary package. Could
 	 * and should remove this method though.
 	 * 
 	 * Notes:
-	 * -Years in the date objec are based on 1900, so will have to sutract 1900 from all years 
+	 * -Years in the date object are based on 1900, so will have to sutract 1900 from all years 
 	 * -Months in a date object are 0-indexed, so must subtract when using enum
+	 * -Currently does NOT account for any changes in time for time zones, such as daylight savings.
+	 * 
+	 * @param month	The month to increment a day to.
+	 * @param day	The day to increment a day to.
+	 * @param year	The year to increment a day to.
+	 * @return	The new Date after incrementing by one day.
 	 */
-	private Date datePlusOne(MONTHS month, int day, int year)
+	@SuppressWarnings("deprecation")
+	private Date datePlusOne(CSMONTHS month, int day, int year)
 	{
 		if(isValidDay(month, day+1, year))
 		{
@@ -381,48 +413,54 @@ public class ToshieCalendar{
 			 */
 		}else
 		{
-			if(month == MONTHS.JAN)
+			if(month == CSMONTHS.JAN)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.FEB.getMonth()-1, 1);
-			}else if(month == MONTHS.FEB)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.FEB.getMonth()-1, 1);
+			}else if(month == CSMONTHS.FEB)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.MAR.getMonth()-1, 1);
-			}else if(month == MONTHS.MAR)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.MAR.getMonth()-1, 1);
+			}else if(month == CSMONTHS.MAR)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.APR.getMonth()-1, 1);
-			}else if(month == MONTHS.APR)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.APR.getMonth()-1, 1);
+			}else if(month == CSMONTHS.APR)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.MAY.getMonth()-1, 1);
-			}else if(month == MONTHS.MAY)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.MAY.getMonth()-1, 1);
+			}else if(month == CSMONTHS.MAY)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.JUN.getMonth()-1, 1);
-			}else if(month == MONTHS.JUN)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.JUN.getMonth()-1, 1);
+			}else if(month == CSMONTHS.JUN)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.JUL.getMonth()-1, 1);
-			}else if(month == MONTHS.JUL)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.JUL.getMonth()-1, 1);
+			}else if(month == CSMONTHS.JUL)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.AUG.getMonth()-1, 1);
-			}else if(month == MONTHS.AUG)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.AUG.getMonth()-1, 1);
+			}else if(month == CSMONTHS.AUG)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.SEP.getMonth()-1, 1);
-			}else if(month == MONTHS.SEP)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.SEP.getMonth()-1, 1);
+			}else if(month == CSMONTHS.SEP)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.OCT.getMonth()-1, 1);
-			}else if(month == MONTHS.OCT)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.OCT.getMonth()-1, 1);
+			}else if(month == CSMONTHS.OCT)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.NOV.getMonth()-1, 1);
-			}else if(month == MONTHS.NOV)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.NOV.getMonth()-1, 1);
+			}else if(month == CSMONTHS.NOV)
 			{
-				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.DEC.getMonth()-1, 1);
-			}else if(month == MONTHS.DEC)
+				return new Date(year-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.DEC.getMonth()-1, 1);
+			}else if(month == CSMONTHS.DEC)
 			{
-				return new Date(year+1-this.YEAR_SUBTRACTION_CONSTANT, MONTHS.JAN.getMonth()-1, 1);
+				return new Date(year+1-this.YEAR_SUBTRACTION_CONSTANT, CSMONTHS.JAN.getMonth()-1, 1);
 			}else
 			{
 				return null;
 			}
 		}
 	}
+	
+	/**
+	 * Getter for calendar object.
+	 * 
+	 * @return The calendar object.
+	 */
 	public Calendar getCalendar(){return this.calendar;}
 
 }

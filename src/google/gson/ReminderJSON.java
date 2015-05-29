@@ -1,27 +1,27 @@
-package gson.objects;
+package google.gson;
 
-public class NotificationJSON {
+public class ReminderJSON {
 	private String method;
-	private String type;
+	private int minutes;
 	
-	public NotificationJSON(String method, String type)
+	public ReminderJSON(String method, int minutes)
 	{
 		this.method = method;
-		this.type = type;
+		this.minutes = minutes;
 	}
 	
+	
 	public String getMethod(){return this.method;}
-	public String getType(){return this.type;}
+	public int getMinutes(){return this.minutes;}
 	
 	public String toString(int tabCount)
 	{
 		String tabs = "\n\t";
 		for(int i = 0; i < tabCount; i++)tabs+="\t";
-		String output=tabs+"Notification: ";
+		String output = tabs+"Reminder: ";
 		tabs+="\t";
-		
 		output+=tabs+"Method: "+this.method;
-		output+=tabs+"Type: "+this.type;
+		output+=tabs+"Minutes: " + this.minutes;
 		
 		return output;
 	}
