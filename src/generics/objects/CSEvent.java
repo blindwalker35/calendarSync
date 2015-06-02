@@ -1,23 +1,23 @@
 package generics.objects;
 
+import java.util.Date;
+
 public class CSEvent {
-	CSMONTHS month;
-	int day;
-	int year;
-	int hour;
-	int minute;
-	int second;
+	Date startDate;
+	Date endDate;
 	String subject;
 	String description;
 	
-	public CSEvent(CSMONTHS month, int day, int year, int hour, int minute, int second, String subject, String description)
+	public CSEvent(Date startDate, Date endDate, String subject, String description)
 	{
-		this.month = month;
-		this.day = day;
-		this.year = year;
-		this.hour = hour;
-		this.second = second;
+		this.startDate = startDate;
+		this.endDate = endDate;
 		this.subject = subject;
 		this.description = description;
 	}
+	
+	public Date getStartDate(){return this.startDate;}
+	public Date getEndDate(){return this.endDate;}
+	public String getSubject(){return this.subject;}
+	public String getDescription(){return this.description;} 
 }

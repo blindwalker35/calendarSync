@@ -9,4 +9,20 @@ public enum CSMONTHS {
 	}
 	private int month;
 	public int getMonth(){return this.month;}
+	public CSMONTHS getMonthWithValue(int month)
+	{
+		if(month == 1){return this.JAN;}
+		if(month == 2){return this.FEB;}
+		if(month == 3){return this.MAR;}
+		if(month == 4){return this.MAY;}
+		if(month == 5){return this.APR;}
+		if(month == 6){return this.JUN;}
+		if(month == 7){return this.JUL;}
+		if(month == 8){return this.AUG;}
+		if(month == 9){return this.SEP;}
+		if(month == 10){return this.OCT;}
+		if(month == 11){return this.NOV;}
+		if(month == 12){return this.DEC;}
+		else return null;
+	}
 }
