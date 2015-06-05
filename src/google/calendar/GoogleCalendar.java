@@ -30,7 +30,7 @@ import com.google.api.services.calendar.model.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 
-/* Organization of this object looks like the folowing:
+/* Organization of this object looks like the following:
  * 
  * ToshieCalendar
  * 	|_CalendarListJSON

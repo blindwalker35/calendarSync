@@ -24,7 +24,8 @@ public class GoogleCalendarDriver {
 		GoogleCalendar tc = null;
 		try {
 			tc = new GoogleCalendar(clientID, clientSecret);
-			testGetEventsForDayOnCalendar(tc);
+			testGetCalendars(tc);
+			//testGetEventsForDayOnCalendar(tc);
 			//testSetEventForDayOnCalendar(tc);
 		} catch (GeneralSecurityException e) {
 			e.printStackTrace();
@@ -35,7 +36,7 @@ public class GoogleCalendarDriver {
 
 	private void testGetCalendars(GoogleCalendar tc)
 	{
-		
+		System.out.println(tc.getCalendars().toString(0));
 	}
 	
 	private void testGetEventsForDayOnCalendar(GoogleCalendar tc)
@@ -43,7 +44,7 @@ public class GoogleCalendarDriver {
 		List<CSEvent> events = null;
 		try {
 			//Get calendar ID from the calendar settings in google calendar.
-			events = tc.getEventsForDayOnCalendar(CSMONTHS.JUN, 1, 2015, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
+			events = tc.getEventsForDayOnCalendar(CSMONTHS.JUN, 2, 2015, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
 			for(CSEvent event: events)
 			{
 				System.out.println(event.getSubject());
