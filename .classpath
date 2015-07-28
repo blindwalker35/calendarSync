@@ -32,5 +32,10 @@
 	<classpathentry kind="lib" path="lib/google/transaction-api-1.1.jar"/>
 	<classpathentry kind="lib" path="lib/openair/axis.jar"/>
 	<classpathentry kind="lib" path="lib/openair/jaxrpc.jar"/>
+	<classpathentry kind="lib" path="lib/common/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="lib/common/commons-discovery-0.5.jar"/>
+	<classpathentry kind="lib" path="lib/common/wsdl4j-1.6.3.jar"/>
+	<classpathentry kind="lib" path="lib/common/activation.jar"/>
+	<classpathentry kind="lib" path="lib/common/javax.mail-1.5.4.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

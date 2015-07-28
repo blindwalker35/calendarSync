@@ -1,4 +1,4 @@
-package google.test;
+package testing;
 
 import generics.exceptions.DateFormatException;
 import generics.objects.CSEvent;
@@ -10,19 +10,31 @@ import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.util.Properties;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.gson.JsonSyntaxException;
 
 public class GoogleCalendarDriver {
-	public GoogleCalendarDriver() {}
+	private CalendarSyncProperties properties;
+	
+	public GoogleCalendarDriver(CalendarSyncProperties properties){this.properties = properties;}
+	
 	public void execute()
 	{
 		// The clientId and clientSecret can be found in Google Developers Console
-		String clientID = "34140919076-59gmiqf8r021is6qg5n7tqe90fnp6jut.apps.googleusercontent.com";
-		String clientSecret = "YUllDP6hCjyq7VZ5bTcPqOTQ";
+		/*
+		 * Once tests are complete on the google calendar component, remove these client ID and secret.
+		 * Client ID and secret can be regenerated in Google Developer's Console.
+		 */
+		String clientID = this.properties.getProperties().getProperty("clientID").toString();
+		String clientSecret = this.properties.getProperties().getProperty("clientSecret").toString();
+		
+		System.out.println("Testing...");
+		
 		GoogleCalendar tc = null;
 		try {
+
 			tc = new GoogleCalendar(clientID, clientSecret);
 			testGetCalendars(tc);
 			//testGetEventsForDayOnCalendar(tc);
@@ -97,7 +109,6 @@ public class GoogleCalendarDriver {
 		
 		try {
 			tc.setEventForDayOnCalendar(event, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
-			tc.setEventForDayOnCalendar(event, "toshie.dev@gmail.com");
 		} catch (DateFormatException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
