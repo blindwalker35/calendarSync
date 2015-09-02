@@ -68,7 +68,6 @@ public class CSOASession {
 	{
 		//Throws ServiceException if unable to create service client
 		stub = (OAirServiceSoapBindingStub) this.oaservice.getOAirService();
-		
 		//Set up login parameters to authenticate with OpenAir
 		LoginParams loginParams = new LoginParams();
 		loginParams.setUser(username);

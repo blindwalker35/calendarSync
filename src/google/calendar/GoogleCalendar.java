@@ -1,6 +1,9 @@
 package google.calendar;
 
-import generics.exceptions.DateFormatException;
+import generics.exceptions.CSCalendarEventOverlapsException;
+import generics.exceptions.GoogleCalendarDateFormatException;
+import generics.objects.CSCalendar;
+import generics.objects.CSConstants;
 import generics.objects.CSEvent;
 import generics.objects.CSMONTHS;
 import google.gson.CalendarListEntryJSON;
@@ -16,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
@@ -89,18 +93,19 @@ import com.google.gson.JsonSyntaxException;
  *	Consists of all the ACL Resources applied to a specific calendar.
  * */
 
-public class GoogleCalendar{
+public class GoogleCalendar extends CSCalendar{
 
 	private final String APPLICATION_NAME = "TEST_APPLICATION";
 	private Calendar calendar;
 	private final int MIN_YEAR = 2010;
 	private final int MAX_YEAR = 2020;
 	private final int YEAR_CONSTANT = 1900;
-	private final SimpleDateFormat SIMPLE_DATE_FORMAT =  new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-
-	public GoogleCalendar(String clientID, String clientSecret) throws GeneralSecurityException, IOException
+	private final String CALENDAR_NAME;
+	
+	public GoogleCalendar(String clientID, String clientSecret, String calendarName) throws GeneralSecurityException, IOException
 	{
 		setup(clientID, clientSecret);
+		this.CALENDAR_NAME = calendarName;
 	}
 
 	/**
@@ -193,16 +198,16 @@ public class GoogleCalendar{
 	 * @throws ParseException	Thrown if the provided dates cannot be parsed into the expected date format.
 	 */
 	@SuppressWarnings("deprecation")
-	public List<CSEvent> getEventsForDayOnCalendar(CSMONTHS month, int day, int year, String calendarName) throws DateFormatException, JsonSyntaxException, IOException, ParseException
+	public List<CSEvent> getEventsForDayOnCalendar(CSMONTHS month, int day, int year) throws GoogleCalendarDateFormatException, JsonSyntaxException, IOException, ParseException
 	{
 		//Check to make sure the provided values are valid
 		if(!isValidDay(month, day, year))
 		{
-			throw new DateFormatException("Invalid month, day, or year provided...");
+			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
 		}
 
 		Gson gson = new Gson();
-		CalendarListEntryJSON calendarListEntry = gson.fromJson(this.calendar.calendarList().get(calendarName).execute().toPrettyString(), CalendarListEntryJSON.class);
+		CalendarListEntryJSON calendarListEntry = gson.fromJson(this.calendar.calendarList().get(this.CALENDAR_NAME).execute().toPrettyString(), CalendarListEntryJSON.class);
 
 		String pageToken = null;
 		Events events = null;
@@ -238,7 +243,7 @@ public class GoogleCalendar{
 	 */
 
 	@SuppressWarnings("deprecation")
-	public void setEventForDayOnCalendar(CSEvent event, String calendarID) throws DateFormatException, IOException
+	public void setEventForDayOnCalendar(CSEvent event, String calendarID) throws GoogleCalendarDateFormatException, IOException
 	{
 		int litMonth, day, year;
 		
@@ -252,7 +257,7 @@ public class GoogleCalendar{
 		//Check to make sure the provided values are valid
 		if(!isValidDay(month, day, year))
 		{
-			throw new DateFormatException("Invalid month, day, or year provided...");
+			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
 		}
 
 		Event converted = convertCSEventToEvent(event);
@@ -285,7 +290,7 @@ public class GoogleCalendar{
 		{
 			strStartDate = eventStart.getDateTime().toString();
 			strStartDate = strStartDate.replaceAll(":(\\d\\d)$", "$1");
-			eventStartDate = this.SIMPLE_DATE_FORMAT.parse(strStartDate);
+			eventStartDate = CSConstants.SIMPLE_DATE_FORMAT.parse(strStartDate);
 			//check if event starts after the provided date
 			if(eventStartDate.after(startDate))
 			{
@@ -293,7 +298,7 @@ public class GoogleCalendar{
 				{
 					strEndDate = eventEnd.getDateTime().toString();
 					strEndDate = strEndDate.replaceAll(":(\\d\\d)$", "$1");
-					eventEndDate = this.SIMPLE_DATE_FORMAT.parse(strEndDate);
+					eventEndDate = CSConstants.SIMPLE_DATE_FORMAT.parse(strEndDate);
 					if(eventEndDate.before(endDate))
 					{
 						return true;
@@ -495,12 +500,12 @@ public class GoogleCalendar{
 
 		if(event.getStart() != null)
 		{
-			eventStartDate = this.SIMPLE_DATE_FORMAT.parse(event.getStart().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
+			eventStartDate = CSConstants.SIMPLE_DATE_FORMAT.parse(event.getStart().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
 		}
 
 		if(event.getEnd() != null)
 		{
-			eventEndDate = this.SIMPLE_DATE_FORMAT.parse(event.getEnd().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
+			eventEndDate = CSConstants.SIMPLE_DATE_FORMAT.parse(event.getEnd().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
 		}
 
 		return new CSEvent(eventStartDate, eventEndDate, event.getSummary(), event.getDescription());
@@ -535,5 +540,55 @@ public class GoogleCalendar{
 		event.setDescription(csevent.getDescription());
 		event.setSummary(csevent.getSubject());
 		return event;
+	}
+
+	/**
+	 * Implementation of abstract method from parent class - CSCalendar.
+	 */
+	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
+		// TODO Auto-generated method stub
+		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
+		Date eventStartDate = CSConstants.SIMPLE_DATE_FORMAT.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
+		Date eventEndDate = CSConstants.SIMPLE_DATE_FORMAT.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
+		
+		/**
+		 * This loop iterates through the dates in the range provided using the datePlusOne method.
+		 * Because I'm an idiot, you have to instantiate a CSMONTHS object to "generate" a new month.
+		 */
+		CSMONTHS tmpMonth = CSMONTHS.JAN;
+		for(Date currDate = eventStartDate; currDate.before(eventEndDate); currDate = 
+				datePlusOne(tmpMonth.getMonthWithValue(currDate.getMonth()+1), currDate.getDay(), currDate.getYear()+this.YEAR_CONSTANT))
+		{
+			try {
+				for(CSEvent dayEvent: getEventsForDayOnCalendar(tmpMonth.getMonthWithValue(currDate.getMonth()+1), currDate.getDay()-1, currDate.getYear()+this.YEAR_CONSTANT))
+				{
+					events.add(dayEvent);
+				}
+			} catch (JsonSyntaxException e) {
+				e.printStackTrace();
+			} catch (GoogleCalendarDateFormatException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+				
+		return events;
+	}
+
+	/**
+	 * Implementation of abstract method from parent class - CSCalendar.
+	 */
+	public void setEvent(CSEvent event, Map<String, String> requestParams){
+		try {
+			setEventForDayOnCalendar(event, requestParams.get(CSConstants.REQUEST_PARAM_CALENDAR_ID));
+		} catch (GoogleCalendarDateFormatException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 }

@@ -1,6 +1,8 @@
 package testing;
 
-import generics.exceptions.DateFormatException;
+import generics.exceptions.GoogleCalendarDateFormatException;
+import generics.objects.CSCalendar;
+import generics.objects.CSConstants;
 import generics.objects.CSEvent;
 import generics.objects.CSMONTHS;
 import google.calendar.GoogleCalendar;
@@ -8,14 +10,17 @@ import google.calendar.GoogleCalendar;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.gson.JsonSyntaxException;
 
-public class GoogleCalendarDriver {
+public class GoogleCalendarDriver{
 	private CalendarSyncProperties properties;
 	
 	public GoogleCalendarDriver(CalendarSyncProperties properties){this.properties = properties;}
@@ -35,10 +40,11 @@ public class GoogleCalendarDriver {
 		GoogleCalendar tc = null;
 		try {
 
-			tc = new GoogleCalendar(clientID, clientSecret);
-			testGetCalendars(tc);
+			tc = new GoogleCalendar(clientID, clientSecret, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
+			//testGetCalendars(tc);
 			//testGetEventsForDayOnCalendar(tc);
 			//testSetEventForDayOnCalendar(tc);
+			testAbstractMethodGetEvents(tc);
 		} catch (GeneralSecurityException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -56,7 +62,7 @@ public class GoogleCalendarDriver {
 		List<CSEvent> events = null;
 		try {
 			//Get calendar ID from the calendar settings in google calendar.
-			events = tc.getEventsForDayOnCalendar(CSMONTHS.JUN, 2, 2015, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
+			events = tc.getEventsForDayOnCalendar(CSMONTHS.JUN, 2, 2015);
 			for(CSEvent event: events)
 			{
 				System.out.println(event.getSubject());
@@ -70,7 +76,7 @@ public class GoogleCalendarDriver {
 				System.out.println("Minute: " + date.getMinutes());
 				System.out.println("Second: " + date.getSeconds());
 			}
-		} catch (DateFormatException e) {
+		} catch (GoogleCalendarDateFormatException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (JsonSyntaxException e) {
@@ -109,12 +115,40 @@ public class GoogleCalendarDriver {
 		
 		try {
 			tc.setEventForDayOnCalendar(event, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
-		} catch (DateFormatException e) {
+		} catch (GoogleCalendarDateFormatException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+	}
+	
+	
+	/**
+	 * Tests the implementation of the abstract method "getEvents".
+	 * @param tc
+	 */
+	
+	private void testAbstractMethodGetEvents(GoogleCalendar tc)
+	{
+		Map<String,String> requestParams = new HashMap<String, String>();
+		requestParams.put(CSConstants.REQUEST_PARAM_START_DATE, "2015-06-02T00:00:00.000-0500");
+		requestParams.put(CSConstants.REQUEST_PARAM_END_DATE, "2015-06-02T23:59:59.999-0500");
+		ArrayList<CSEvent> events = null;
+		try {
+			events = tc.getEvents(requestParams);
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		for(CSEvent event: events)
+		{
+			System.out.println("Subject: " + event.getSubject());
+			System.out.println("Description: " + event.getDescription());
+			System.out.println("Start Date: " + event.getStartDate());
+			System.out.println("End Date: " + event.getEndDate());
 		}
 	}
 }

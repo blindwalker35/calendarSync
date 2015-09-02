@@ -8,6 +8,8 @@ public class CSEvent {
 	String subject;
 	String description;
 	
+	public CSEvent(){}
+	
 	public CSEvent(Date startDate, Date endDate, String subject, String description)
 	{
 		this.startDate = startDate;
