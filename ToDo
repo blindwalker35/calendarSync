@@ -1,0 +1,9 @@
+To do list:
+-Make batch requests possible for openair.
+	-Do not fire off request in each method - build out the request, and have the request be sent in a separate method
+	-Decorate design pattern perhaps?
+-Logger
+-Make the OpenAir object types be enumerated - this will simplify the OPERATION_TYPE mappings.
+-What should be the logic for getEvents with OPERATION_TYPE booking request?
+	-The problem is that we would have to look up the user, iterate through the range of dates between START_DATE and END_DATE, and check all bookings for that user on each day
+		-This logic is what lead to the requirement of making batch requests

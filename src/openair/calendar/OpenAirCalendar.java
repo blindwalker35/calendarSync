@@ -12,10 +12,19 @@ import generics.exceptions.CSCalendarEventOverlapsException;
 import generics.objects.CSCalendar;
 import generics.objects.CSConstants;
 import generics.objects.CSEvent;
+import openair.objects.CSOABooking;
 import openair.objects.CSOASession;
 import openair.wsdl.LoginResult;
 import openair.wsdl.OAirServiceHandlerServiceLocator;
 import testing.CalendarSyncProperties;
+
+/**
+ * This class should never be instantiated by itself. All instances of this class should be provided through
+ * the OpenAirCalendarFactory class.
+ * 
+ * @author ttakahashi
+ *
+ */
 
 public class OpenAirCalendar extends CSCalendar{
 	
@@ -34,16 +43,19 @@ public class OpenAirCalendar extends CSCalendar{
 	//Creates the session object from openair from authentication
 	private CSOASession csoaSession;
 	
-	public OpenAirCalendar(CalendarSyncProperties properties)
+	/**
+	 * Protected visibility so only the OpenAirCalendarFactory has access to this class.
+	 * @param properties The CalendarSyncProperties object that contains all the properties to be laoded for this method.
+	 */
+	protected OpenAirCalendar(CalendarSyncProperties properties)
 	{
 		this.properties = properties;
 		collectCredentials();
-		/*possible to fail login if bad credentials...wouldn't really want to throw an exception in the constructor
-		 *but also don't want the possibility of using this class without logging in first. 
-		 **/
-		login(); 
 	}
 	
+	/**
+	 * No real need for this method, just isolating code that extracts data from actual initialization.
+	 */
 	private void collectCredentials()
 	{
 		
@@ -57,7 +69,7 @@ public class OpenAirCalendar extends CSCalendar{
 		
 	}
 	
-	private void login()
+	protected void login()
 	{
 		//Attempt authentication
 		CSOASession session = new CSOASession(CSConstants.OPENAIR_SANDBOX_ENDPOINT);
@@ -78,18 +90,23 @@ public class OpenAirCalendar extends CSCalendar{
 		}
 	}
 	
+	/**
+	 * Should remove this method as soon as all OpenAir operations are moved into this class
+	 * @return
+	 */
 	public CSOASession getSession(){return this.csoaSession;}
 	
 	public List<CSEvent> getBookingRequest()
 	{
-		
+		CSOABooking csoaBooking = new CSOABooking(this.csoaSession);
+		csoaBooking.retrieveBookings("2911");
 		return null;
 	}
 	
 
 	@Override
 	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) {
-		// TODO Auto-generated method stub
+		String operationType = requestParams.get(CSConstants.REQUEST_PARAM_OPERATION_TYPE);
 		return null;
 	}
 

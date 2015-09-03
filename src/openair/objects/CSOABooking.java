@@ -1,5 +1,7 @@
 package openair.objects;
 
+import generics.objects.CSConstants;
+
 import java.rmi.RemoteException;
 
 import openair.wsdl.Attribute;
@@ -19,21 +21,32 @@ public class CSOABooking {
 
 	public void retrieveBookings(String bookingID)
 	{
-		ReadRequest [] reads = new ReadRequest[1];
+		ReadRequest [] reads = new ReadRequest[CSConstants.OPENAIR_REQUEST_COUNT_LIMIT];
 		reads[0] = new ReadRequest();
 		reads[0].setType("Booking_request");
 		reads[0].setMethod("equal to");
 
 		OaBooking_request bookingRequest = new OaBooking_request();
 		bookingRequest.setId(bookingID);
-
+		
 		reads[0].setObjects(new OaBase[]{bookingRequest});
 
+		//Code to test multiple operations in a single request.
+//		reads[1] = new ReadRequest();
+//		reads[1].setType("Booking_request");
+//		reads[1].setMethod("equal to");
+//
+//		OaBooking_request bookingRequest2 = new OaBooking_request();
+//		bookingRequest2.setId("2915");
+//		
+//		reads[1].setObjects(new OaBase[]{bookingRequest2});
+		//
+		
 		int limit = 1000;
 
 		Attribute attr = new Attribute();
 		attr.setName("limit");
-		attr.setValue(String.format("%1$d", limit));
+		attr.setValue(String.format("%1$d", CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT));
 		reads[0].setAttributes(new Attribute[]{attr});
 
 		System.out.println("Fetching booking requests....");

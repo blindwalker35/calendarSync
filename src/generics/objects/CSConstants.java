@@ -18,4 +18,6 @@ public class CSConstants {
 	
 	//OpenAir constants
 	public static final String OPENAIR_SANDBOX_ENDPOINT="https://sandbox.openair.com/soap";
+	public static final int OPENAIR_REQUEST_COUNT_LIMIT = 10;
+	public static final int OPENAIR_RESPONSE_COUNT_LIMIT = 1000;
 }

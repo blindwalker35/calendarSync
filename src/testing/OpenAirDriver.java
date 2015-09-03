@@ -10,6 +10,7 @@ import javax.xml.rpc.ServiceException;
 import javax.xml.soap.SOAPException;
 
 import openair.calendar.OpenAirCalendar;
+import openair.calendar.OpenAirCalendarFactory;
 import openair.objects.CSOABooking;
 import openair.objects.CSOARequestOperation;
 import openair.objects.CSOASession;
@@ -26,7 +27,8 @@ public class OpenAirDriver {
 	public void execute()
 	{
 		//Get user credentials before starting any testing
-		OpenAirCalendar oac = new OpenAirCalendar(this.properties);
+		OpenAirCalendarFactory oacf = new OpenAirCalendarFactory();
+		OpenAirCalendar oac = oacf.getInstanceOfOpenAirCalendar(this.properties);
 		
 //		CSOARequestOperation csoaRequestOperation = new CSOARequestOperation(csoaSession);
 //		csoaRequestOperation.testRequest();
