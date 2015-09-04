@@ -14,8 +14,13 @@ import generics.objects.CSConstants;
 import generics.objects.CSEvent;
 import openair.objects.CSOABooking;
 import openair.objects.CSOASession;
+import openair.wsdl.Attribute;
 import openair.wsdl.LoginResult;
 import openair.wsdl.OAirServiceHandlerServiceLocator;
+import openair.wsdl.OaBase;
+import openair.wsdl.OaBooking_request;
+import openair.wsdl.ReadRequest;
+import openair.wsdl.ReadResult;
 import testing.CalendarSyncProperties;
 
 /**
@@ -43,12 +48,18 @@ public class OpenAirCalendar extends CSCalendar{
 	//Creates the session object from openair from authentication
 	private CSOASession csoaSession;
 	
+	//Creates the request object that will be sent as a batch request
+	private ReadRequest [] reads;
+	private int readRequestIndex;
+	
 	/**
 	 * Protected visibility so only the OpenAirCalendarFactory has access to this class.
 	 * @param properties The CalendarSyncProperties object that contains all the properties to be laoded for this method.
 	 */
 	protected OpenAirCalendar(CalendarSyncProperties properties)
 	{
+		reads = new ReadRequest[CSConstants.OPENAIR_REQUEST_COUNT_LIMIT];
+		readRequestIndex = 0;
 		this.properties = properties;
 		collectCredentials();
 	}
@@ -69,6 +80,9 @@ public class OpenAirCalendar extends CSCalendar{
 		
 	}
 	
+	/**
+	 * Protected method so that only the OpenAirCalendarFactory can login a session.
+	 */
 	protected void login()
 	{
 		//Attempt authentication
@@ -96,13 +110,41 @@ public class OpenAirCalendar extends CSCalendar{
 	 */
 	public CSOASession getSession(){return this.csoaSession;}
 	
-	public List<CSEvent> getBookingRequest()
+	public List<CSEvent> getBookingRequest(String bookingID)
 	{
 		CSOABooking csoaBooking = new CSOABooking(this.csoaSession);
-		csoaBooking.retrieveBookings("2911");
+		ReadRequest rr = new ReadRequest();
+		rr.setType("Booking_request");
+		rr.setMethod("equal to");
+		reads[this.readRequestIndex] = rr;
+		reads[this.readRequestIndex].setObjects(new OaBase[]{csoaBooking.retrieveBookingWithID(bookingID)});
+		this.readRequestIndex++;
 		return null;
 	}
 	
+	/**
+	 * Submit the accumulated read requests. Upon successful submission, will reset the readRequestIndex so that the request array is reset.
+	 * @return
+	 */
+	public ReadResult[] submitReadRequest()
+	{
+		Attribute attr = new Attribute();
+		attr.setName("limit");
+		attr.setValue(String.format("%1$d", CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT));
+		reads[0].setAttributes(new Attribute[]{attr});
+
+		ReadResult [] results = null;
+		try {
+			results = this.csoaSession.getStub().read(reads);
+			this.reads = new ReadRequest[CSConstants.OPENAIR_REQUEST_COUNT_LIMIT];
+			this.readRequestIndex = 0;
+			return results;
+		} catch (RemoteException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+	}
 
 	@Override
 	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) {
