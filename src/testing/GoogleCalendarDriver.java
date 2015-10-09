@@ -32,15 +32,15 @@ public class GoogleCalendarDriver{
 		 * Once tests are complete on the google calendar component, remove these client ID and secret.
 		 * Client ID and secret can be regenerated in Google Developer's Console.
 		 */
-		String clientID = this.properties.getProperties().getProperty("clientID").toString();
-		String clientSecret = this.properties.getProperties().getProperty("clientSecret").toString();
+		String clientID = this.properties.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTID).toString();
+		String clientSecret = this.properties.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTSECRET).toString();
 		
 		System.out.println("Testing...");
 		
 		GoogleCalendar tc = null;
 		try {
-
-			tc = new GoogleCalendar(clientID, clientSecret, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
+			//tc = new GoogleCalendar(clientID, clientSecret, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
+			tc = new GoogleCalendar(this.properties);
 			//testGetCalendars(tc);
 			//testGetEventsForDayOnCalendar(tc);
 			//testSetEventForDayOnCalendar(tc);

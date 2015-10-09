@@ -1,24 +1,31 @@
 package openair.calendar;
 
 import java.rmi.RemoteException;
+import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.rpc.ServiceException;
 import javax.xml.soap.SOAPException;
 
 import generics.exceptions.CSCalendarEventOverlapsException;
+import generics.helpers.CalendarSyncHelper;
 import generics.objects.CSCalendar;
 import generics.objects.CSConstants;
 import generics.objects.CSEvent;
-import openair.objects.CSOABooking;
 import openair.objects.CSOASession;
 import openair.wsdl.Attribute;
 import openair.wsdl.LoginResult;
 import openair.wsdl.OAirServiceHandlerServiceLocator;
 import openair.wsdl.OaBase;
+import openair.wsdl.OaBooking;
 import openair.wsdl.OaBooking_request;
+import openair.wsdl.OaDate;
+import openair.wsdl.OaUser;
 import openair.wsdl.ReadRequest;
 import openair.wsdl.ReadResult;
 import testing.CalendarSyncProperties;
@@ -49,19 +56,24 @@ public class OpenAirCalendar extends CSCalendar{
 	private CSOASession csoaSession;
 	
 	//Creates the request object that will be sent as a batch request
-	private ReadRequest [] reads;
-	private int readRequestIndex;
+	private ArrayList<ReadRequest> reads;
+	
+	private final Attribute LIMIT;
 	
 	/**
 	 * Protected visibility so only the OpenAirCalendarFactory has access to this class.
 	 * @param properties The CalendarSyncProperties object that contains all the properties to be laoded for this method.
 	 */
-	protected OpenAirCalendar(CalendarSyncProperties properties)
+	public OpenAirCalendar(CalendarSyncProperties properties)
 	{
-		reads = new ReadRequest[CSConstants.OPENAIR_REQUEST_COUNT_LIMIT];
-		readRequestIndex = 0;
+		this.reads = new ArrayList<ReadRequest>();
 		this.properties = properties;
 		collectCredentials();
+		
+		Attribute attr = new Attribute();
+		attr.setName("limit");
+		attr.setValue(String.format("%1$d", CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT));
+		this.LIMIT = attr;
 	}
 	
 	/**
@@ -104,40 +116,71 @@ public class OpenAirCalendar extends CSCalendar{
 		}
 	}
 	
-	/**
-	 * Should remove this method as soon as all OpenAir operations are moved into this class
-	 * @return
-	 */
-	public CSOASession getSession(){return this.csoaSession;}
-	
-	public List<CSEvent> getBookingRequest(String bookingID)
+	private void reqGetUsernameFromUserID(String userID)
 	{
-		CSOABooking csoaBooking = new CSOABooking(this.csoaSession);
+		ReadRequest rr = new ReadRequest();
+		rr.setType("User");
+		rr.setMethod("equal to");
+		OaUser user = new OaUser();
+		user.setId(userID);
+		rr.setObjects(new OaBase[]{user});
+		Attribute attr = new Attribute();
+		attr.setName("limit");
+	}
+	
+	/**
+	 * Get all bookings stored in openair for the provided userID.
+	 * @param userID The numeric userID for a user - for example, "78"
+	 */
+	private void reqBookingByUserID(String userID)
+	{
+		ReadRequest rr = new ReadRequest();
+		rr.setType("Booking");
+		rr.setMethod("equal to");
+		OaBooking br = new OaBooking();
+		br.setUserid(userID);
+		br.setApproval_status("A");
+		rr.setObjects(new OaBase[]{br});
+		rr.setAttributes(new Attribute[]{this.LIMIT});
+		this.reads.add(rr);
+	}
+	
+	/**
+	 * Get all booking requests stored in openair for the provided userID.
+	 * @param userID The numeric userID for a user - for example, "78".
+	 */
+	private void reqBookingRequestByUserID(String userID)
+	{
 		ReadRequest rr = new ReadRequest();
 		rr.setType("Booking_request");
 		rr.setMethod("equal to");
-		reads[this.readRequestIndex] = rr;
-		reads[this.readRequestIndex].setObjects(new OaBase[]{csoaBooking.retrieveBookingWithID(bookingID)});
-		this.readRequestIndex++;
-		return null;
+		OaBooking_request br = new OaBooking_request();
+		br.setUser_id(userID);
+		br.setApproval_status("A");
+		rr.setObjects(new OaBase[]{br});
+		rr.setAttributes(new Attribute[]{this.LIMIT});
+		this.reads.add(rr);
 	}
 	
 	/**
 	 * Submit the accumulated read requests. Upon successful submission, will reset the readRequestIndex so that the request array is reset.
-	 * @return
+	 * @return The results in a ReadResult array. The maximum size of the array is determined by the value of CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT.
 	 */
 	public ReadResult[] submitReadRequest()
 	{
-		Attribute attr = new Attribute();
-		attr.setName("limit");
-		attr.setValue(String.format("%1$d", CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT));
-		reads[0].setAttributes(new Attribute[]{attr});
-
+		//Copy ReadRequests from arraylist into array. If there are more requests than the limit, break.
+		ReadRequest[] requests = new ReadRequest[this.reads.size()];
+		for(int i = 0; i < this.reads.size(); i++)
+		{
+			if(i > CSConstants.OPENAIR_REQUEST_COUNT_LIMIT) break;
+			requests[i] = this.reads.get(i);
+			
+		}
+		
 		ReadResult [] results = null;
 		try {
-			results = this.csoaSession.getStub().read(reads);
-			this.reads = new ReadRequest[CSConstants.OPENAIR_REQUEST_COUNT_LIMIT];
-			this.readRequestIndex = 0;
+			results = this.csoaSession.getStub().read(requests);
+			this.reads = new ArrayList<ReadRequest>();
 			return results;
 		} catch (RemoteException e) {
 			// TODO Auto-generated catch block
@@ -146,16 +189,86 @@ public class OpenAirCalendar extends CSCalendar{
 		}
 	}
 
-	@Override
-	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) {
+	/**
+	 * Gets all Bookings for a given userID between the specified dates contained in the requestParams map.
+	 * @param requestParams A map of all the request attributes.
+	 * @return An arrayList of CSEvent objects containing an even that fits the requestParam parameters
+	 * @throws ParseException thrown if the provided date cannot be parsed.
+	 */
+	private ArrayList<CSEvent> getBookingsByUserID(Map<String, String> requestParams) throws ParseException
+	{
+		Date searchStartDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
+		Date searchEndDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
+		
+		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
+		ReadResult[] results = null;
+		CSEvent event = null;
+		Date startDate = null;
+		Date endDate = null;
+		Date creationDate = null;
+		String description = null;
+		String subject = null;
+		
+		String userID = requestParams.get(CSConstants.REQUEST_PARAM_OPENAIR_USERID);
+		reqBookingByUserID(userID);
+		results = submitReadRequest();
+		
+		OaBooking resBooking;
+		for(ReadResult result: results)
+		{
+			if(result.getObjects() != null)
+			{
+				OaBase[] retObjects = result.getObjects();
+				for(OaBase object: retObjects)
+				{
+					resBooking = (OaBooking) object;
+					event = new CSEvent();
+					
+					startDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getStartdate());
+					endDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getEnddate());
+					
+					if(!(endDate.before(searchStartDate) || startDate.after(searchEndDate)))
+					{
+						
+						startDate.setSeconds(1);
+						endDate.setSeconds(1);
+						
+						creationDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getCreated());
+						subject = resBooking.getUserid() +" " + resBooking.getPercentage() + "% - " +
+								resBooking.getProjectid() + " - " + resBooking.getEnddate();
+						description = "Created: " + creationDate.toString();
+						
+						events.add(new CSEvent(startDate, endDate, subject, description));
+					}
+				}
+			}
+		}
+		return events;
+	}
+	
+	/**
+	 * Obtains all events that occur between the provided dates
+	 * @param requestParams The map object containing all parameters regarding the request.
+	 * @return ArrayList<CSEvent> an arrayList of all events retrieved that match the description from requestParams.
+	 */
+	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
+		
 		String operationType = requestParams.get(CSConstants.REQUEST_PARAM_OPERATION_TYPE);
+		
+		
+		if(operationType.equals(CSOAOPERATIONS.BOOKINGS_BY_UID.value()))
+		{
+			return getBookingsByUserID(requestParams);
+		}
 		return null;
 	}
 
 	@Override
 	public void setEvent(CSEvent event, Map<String, String> requestParams) {
 		// TODO Auto-generated method stub
-		
+		//Not yet implemented
 	}
+	
+	
 	
 }

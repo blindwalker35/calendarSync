@@ -33,4 +33,5 @@ public class CSEvent {
 	public Date getEndDate(){return this.endDate;}
 	public String getSubject(){return this.subject;}
 	public String getDescription(){return this.description;} 
+	
 }

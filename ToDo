@@ -1,6 +1,6 @@
 To do list:
 -Logger
--Make the OpenAir object types be enumerated - this will simplify the OPERATION_TYPE mappings.
--What should be the logic for getEvents with OPERATION_TYPE booking request?
-	-The problem is that we would have to look up the user, iterate through the range of dates between START_DATE and END_DATE, and check all bookings for that user on each day
-		-This logic is what lead to the requirement of making batch requests
+-Logout functionality? Pretty low on priority
+-If batch requests goes over the CSConstants limit, start generating a second (or more) request to send out.
+-Look up UID and ProjectID for the name rather than some arbitrary number
+-Duplicate event checks in setEvents method

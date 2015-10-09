@@ -1,7 +1,7 @@
 package google.calendar;
 
-import generics.exceptions.CSCalendarEventOverlapsException;
 import generics.exceptions.GoogleCalendarDateFormatException;
+import generics.helpers.CalendarSyncHelper;
 import generics.objects.CSCalendar;
 import generics.objects.CSConstants;
 import generics.objects.CSEvent;
@@ -14,12 +14,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import testing.CalendarSyncProperties;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
@@ -97,15 +98,14 @@ public class GoogleCalendar extends CSCalendar{
 
 	private final String APPLICATION_NAME = "TEST_APPLICATION";
 	private Calendar calendar;
-	private final int MIN_YEAR = 2010;
-	private final int MAX_YEAR = 2020;
-	private final int YEAR_CONSTANT = 1900;
 	private final String CALENDAR_NAME;
 	
-	public GoogleCalendar(String clientID, String clientSecret, String calendarName) throws GeneralSecurityException, IOException
+	public GoogleCalendar(CalendarSyncProperties csp) throws GeneralSecurityException, IOException
 	{
+		String clientID = csp.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTID);
+		String clientSecret = csp.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTSECRET);
+		this.CALENDAR_NAME = csp.getProperties().getProperty(CSConstants.CSPROPERTY_CALENDARNAME);
 		setup(clientID, clientSecret);
-		this.CALENDAR_NAME = calendarName;
 	}
 
 	/**
@@ -186,8 +186,8 @@ public class GoogleCalendar extends CSCalendar{
 	 * Gets all events listed on a calendar for a given day of the year.
 	 * 
 	 * @param month	The month of the year to look for events.
-	 * @param day	The day of the month to look for events.
-	 * @param year	The year to look for events.
+	 * @param day	The day of the month to look for events. The day provided should be 1-based (not 0-based).
+	 * @param year	The year to look for events. The year should be the current year (for example, 2015).
 	 * @param calendarName	The name of the calendar to look at events for.
 	 *  The value for this is found in the Calendar Details by navigating in Google Calendar from <p/>
 	 *  Calendar Settings--> Calendar Address --> Calendar ID.
@@ -201,7 +201,7 @@ public class GoogleCalendar extends CSCalendar{
 	public List<CSEvent> getEventsForDayOnCalendar(CSMONTHS month, int day, int year) throws GoogleCalendarDateFormatException, JsonSyntaxException, IOException, ParseException
 	{
 		//Check to make sure the provided values are valid
-		if(!isValidDay(month, day, year))
+		if(!CalendarSyncHelper.isValidDay(month, day, year))
 		{
 			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
 		}
@@ -215,10 +215,10 @@ public class GoogleCalendar extends CSCalendar{
 		events = this.calendar.events().list(calendarListEntry.getID()).setPageToken(pageToken).execute();
 
 		//Year is based on 1900, Month is 0 indexed. Have to use deprecated Date due to Google's constructors for DateTime object
-		Date startDate = new Date(year-this.YEAR_CONSTANT, month.getMonth()-1, day);
+		Date startDate = new Date(year-CSConstants.YEAR_CONSTANT, month.getMonth()-1, day);
 
 		//Create end date based on provided values
-		Date endDate = datePlusOne(month, day, year);
+		Date endDate = CalendarSyncHelper.datePlusOne(month, day, year);
 
 		/* Iterate through all events on calendar to verify if event occurs between given dates
 		 * */
@@ -252,10 +252,10 @@ public class GoogleCalendar extends CSCalendar{
 		CSMONTHS temp = CSMONTHS.JAN;	//don't ask...
 		CSMONTHS month = temp.getMonthWithValue(litMonth);
 		day = date.getDate();
-		year = date.getYear()+this.YEAR_CONSTANT;
+		year = date.getYear()+CSConstants.YEAR_CONSTANT;
 		
 		//Check to make sure the provided values are valid
-		if(!isValidDay(month, day, year))
+		if(!CalendarSyncHelper.isValidDay(month, day, year))
 		{
 			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
 		}
@@ -264,7 +264,6 @@ public class GoogleCalendar extends CSCalendar{
 		Event createdEvent = this.calendar.events().insert(calendarID, converted).execute();
 		
 		//Don't have to do anything with createdEvent but in case any post operations are to be performed...
-	
 	}
 
 	/**
@@ -290,7 +289,7 @@ public class GoogleCalendar extends CSCalendar{
 		{
 			strStartDate = eventStart.getDateTime().toString();
 			strStartDate = strStartDate.replaceAll(":(\\d\\d)$", "$1");
-			eventStartDate = CSConstants.SIMPLE_DATE_FORMAT.parse(strStartDate);
+			eventStartDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(strStartDate);
 			//check if event starts after the provided date
 			if(eventStartDate.after(startDate))
 			{
@@ -298,7 +297,7 @@ public class GoogleCalendar extends CSCalendar{
 				{
 					strEndDate = eventEnd.getDateTime().toString();
 					strEndDate = strEndDate.replaceAll(":(\\d\\d)$", "$1");
-					eventEndDate = CSConstants.SIMPLE_DATE_FORMAT.parse(strEndDate);
+					eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(strEndDate);
 					if(eventEndDate.before(endDate))
 					{
 						return true;
@@ -314,171 +313,6 @@ public class GoogleCalendar extends CSCalendar{
 		}
 		return false;
 	}
-
-	/**
-	 * Validate whether a given month, day, and year combination is valid. This also accounts for leap years.
-	 * 
-	 * @param month	The month to validate.
-	 * @param day	The day to validate.
-	 * @param year	The year to validate.
-	 * @return	Returns a boolean value whether the provided month, day, and year is a valid date.
-	 */
-	private boolean isValidDay(CSMONTHS month, int day, int year)
-	{
-		if(year < this.MIN_YEAR || year > this.MAX_YEAR){return false;}
-		if(day < 1){return false;}
-
-		if(month == CSMONTHS.JAN)
-		{
-			if(day > 31)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.FEB)
-		{
-			int feb_max = 28;
-			if((year%4)==0)
-			{
-				feb_max=29;
-			}
-			if(day > feb_max)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.MAR)
-		{
-			if(day > 31)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.APR)
-		{
-			if(day > 30)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.MAY)
-		{
-			if(day > 31)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.JUN)
-		{
-			if(day > 30)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.JUL)
-		{
-			if(day > 31)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.AUG)
-		{
-			if(day > 31)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.SEP)
-		{
-			if(day > 30)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.OCT)
-		{
-			if(day > 31)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.NOV)
-		{
-			if(day > 30)
-			{
-				return false;
-			}
-		}else if(month == CSMONTHS.DEC)
-		{
-			if(day > 31)
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * There isn't a particularly good built in way to increment a date in an object class - would have to use
-	 * Java Calendar object - but due to Google package imports, would have to provide full package name to use
-	 * the Java Calendar instead of Google Calendar. Out of preference, creating this unnecessary package. Could
-	 * and should remove this method though.
-	 * <p/>
-	 * <p/>Notes:
-	 * <p/>-Years in the date object are based on 1900, so will have to subtract 1900 from all years 
-	 * <p/>-Months in a date object are 0-indexed, so must subtract when using enum
-	 * <p/>-Currently does NOT account for any changes in time for time zones, such as daylight savings.
-	 * 
-	 * @param month	The month to increment a day to.
-	 * @param day	The day to increment a day to.
-	 * @param year	The year to increment a day to.
-	 * @return	The new Date after incrementing by one day.
-	 */
-	@SuppressWarnings("deprecation")
-	private Date datePlusOne(CSMONTHS month, int day, int year)
-	{
-		if(isValidDay(month, day+1, year))
-		{
-			return new Date(year-this.YEAR_CONSTANT, month.getMonth()-1, day+1);
-			/*Only reason to fail date validity is if the month or year rolled over
-			 * IsValidDay also accounts for leap years, so only rollovers are in the else
-			 */
-		}else
-		{
-			if(month == CSMONTHS.JAN)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.FEB.getMonth()-1, 1);
-			}else if(month == CSMONTHS.FEB)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.MAR.getMonth()-1, 1);
-			}else if(month == CSMONTHS.MAR)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.APR.getMonth()-1, 1);
-			}else if(month == CSMONTHS.APR)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.MAY.getMonth()-1, 1);
-			}else if(month == CSMONTHS.MAY)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.JUN.getMonth()-1, 1);
-			}else if(month == CSMONTHS.JUN)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.JUL.getMonth()-1, 1);
-			}else if(month == CSMONTHS.JUL)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.AUG.getMonth()-1, 1);
-			}else if(month == CSMONTHS.AUG)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.SEP.getMonth()-1, 1);
-			}else if(month == CSMONTHS.SEP)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.OCT.getMonth()-1, 1);
-			}else if(month == CSMONTHS.OCT)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.NOV.getMonth()-1, 1);
-			}else if(month == CSMONTHS.NOV)
-			{
-				return new Date(year-this.YEAR_CONSTANT, CSMONTHS.DEC.getMonth()-1, 1);
-			}else if(month == CSMONTHS.DEC)
-			{
-				return new Date(year+1-this.YEAR_CONSTANT, CSMONTHS.JAN.getMonth()-1, 1);
-			}else
-			{
-				return null;
-			}
-		}
-	}
-
 
 	/**
 	 * Converts a CSEvent object (the intermediate event data format) to an Event object (google calendar event data format).
@@ -500,12 +334,12 @@ public class GoogleCalendar extends CSCalendar{
 
 		if(event.getStart() != null)
 		{
-			eventStartDate = CSConstants.SIMPLE_DATE_FORMAT.parse(event.getStart().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
+			eventStartDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(event.getStart().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
 		}
 
 		if(event.getEnd() != null)
 		{
-			eventEndDate = CSConstants.SIMPLE_DATE_FORMAT.parse(event.getEnd().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
+			eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(event.getEnd().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
 		}
 
 		return new CSEvent(eventStartDate, eventEndDate, event.getSummary(), event.getDescription());
@@ -546,21 +380,19 @@ public class GoogleCalendar extends CSCalendar{
 	 * Implementation of abstract method from parent class - CSCalendar.
 	 */
 	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
-		// TODO Auto-generated method stub
 		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
-		Date eventStartDate = CSConstants.SIMPLE_DATE_FORMAT.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
-		Date eventEndDate = CSConstants.SIMPLE_DATE_FORMAT.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
+		Date eventStartDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
+		Date eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
 		
 		/**
 		 * This loop iterates through the dates in the range provided using the datePlusOne method.
 		 * Because I'm an idiot, you have to instantiate a CSMONTHS object to "generate" a new month.
 		 */
-		CSMONTHS tmpMonth = CSMONTHS.JAN;
 		for(Date currDate = eventStartDate; currDate.before(eventEndDate); currDate = 
-				datePlusOne(tmpMonth.getMonthWithValue(currDate.getMonth()+1), currDate.getDay(), currDate.getYear()+this.YEAR_CONSTANT))
+				CalendarSyncHelper.datePlusOne(CSConstants.CSMONTHS_SNGL.getMonthWithValue(currDate.getMonth()+1), currDate.getDate(), currDate.getYear()+CSConstants.YEAR_CONSTANT))
 		{
 			try {
-				for(CSEvent dayEvent: getEventsForDayOnCalendar(tmpMonth.getMonthWithValue(currDate.getMonth()+1), currDate.getDay()-1, currDate.getYear()+this.YEAR_CONSTANT))
+				for(CSEvent dayEvent: getEventsForDayOnCalendar(CSConstants.CSMONTHS_SNGL.getMonthWithValue(currDate.getMonth()+1), currDate.getDate()-1, currDate.getYear()+CSConstants.YEAR_CONSTANT))
 				{
 					events.add(dayEvent);
 				}
@@ -581,7 +413,7 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 	public void setEvent(CSEvent event, Map<String, String> requestParams){
 		try {
-			setEventForDayOnCalendar(event, requestParams.get(CSConstants.REQUEST_PARAM_CALENDAR_ID));
+			setEventForDayOnCalendar(event, requestParams.get(CSConstants.REQUEST_PARAM_GOOGLE_CALENDAR_ID));
 		} catch (GoogleCalendarDateFormatException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

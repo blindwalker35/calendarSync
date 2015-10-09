@@ -1,10 +1,15 @@
 package drivers;
 
-import java.io.IOException;
+import google.calendar.GoogleCalendar;
 
+import java.io.IOException;
+import java.security.GeneralSecurityException;
+
+import openair.calendar.OpenAirCalendar;
 import testing.CalendarSyncProperties;
 import testing.GoogleCalendarDriver;
 import testing.OpenAirDriver;
+import testing.TestDriver;
 
 
 public class Driver {
@@ -27,9 +32,12 @@ public class Driver {
 //		gcd.execute();
 		
 		//Test Open Air
-		OpenAirDriver oad = new OpenAirDriver(csp);
-		oad.execute();
+//		OpenAirDriver oad = new OpenAirDriver(csp);
+//		oad.execute();
 		
+		//Test Cross Platform
+		TestDriver td = new TestDriver(csp);
+		td.execute();
 
 	}	
 }
