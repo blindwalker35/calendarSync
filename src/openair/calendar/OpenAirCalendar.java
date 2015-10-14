@@ -24,10 +24,13 @@ import openair.wsdl.OAirServiceHandlerServiceLocator;
 import openair.wsdl.OaBase;
 import openair.wsdl.OaBooking;
 import openair.wsdl.OaBooking_request;
+import openair.wsdl.OaCustomField;
 import openair.wsdl.OaDate;
+import openair.wsdl.OaProject;
 import openair.wsdl.OaUser;
 import openair.wsdl.ReadRequest;
 import openair.wsdl.ReadResult;
+import sun.tools.tree.ThisExpression;
 import testing.CalendarSyncProperties;
 
 /**
@@ -39,7 +42,7 @@ import testing.CalendarSyncProperties;
  */
 
 public class OpenAirCalendar extends CSCalendar{
-	
+
 	//Attributes required to make OpenAir API Calls
 	private String username;
 	private String password;
@@ -48,18 +51,19 @@ public class OpenAirCalendar extends CSCalendar{
 	private String apiKey;
 	private String clientName;
 	private String clientVersion;
-	
+
 	//The properties file to load OpenAir credentials from
 	private CalendarSyncProperties properties;
-	
+
+
 	//Creates the session object from openair from authentication
 	private CSOASession csoaSession;
-	
+
 	//Creates the request object that will be sent as a batch request
 	private ArrayList<ReadRequest> reads;
-	
+
 	private final Attribute LIMIT;
-	
+
 	/**
 	 * Protected visibility so only the OpenAirCalendarFactory has access to this class.
 	 * @param properties The CalendarSyncProperties object that contains all the properties to be laoded for this method.
@@ -69,19 +73,19 @@ public class OpenAirCalendar extends CSCalendar{
 		this.reads = new ArrayList<ReadRequest>();
 		this.properties = properties;
 		collectCredentials();
-		
+
 		Attribute attr = new Attribute();
 		attr.setName("limit");
 		attr.setValue(String.format("%1$d", CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT));
 		this.LIMIT = attr;
 	}
-	
+
 	/**
 	 * No real need for this method, just isolating code that extracts data from actual initialization.
 	 */
 	private void collectCredentials()
 	{
-		
+
 		this.username = this.properties.getProperties().getProperty("username");
 		this.password = this.properties.getProperties().getProperty("password");
 		this.company = this.properties.getProperties().getProperty("company");
@@ -89,9 +93,9 @@ public class OpenAirCalendar extends CSCalendar{
 		this.apiKey = this.properties.getProperties().getProperty("apiKey");
 		this.clientName = this.properties.getProperties().getProperty("clientName");
 		this.clientVersion = this.properties.getProperties().getProperty("clientVersion");
-		
+
 	}
-	
+
 	/**
 	 * Protected method so that only the OpenAirCalendarFactory can login a session.
 	 */
@@ -115,7 +119,10 @@ public class OpenAirCalendar extends CSCalendar{
 			e.printStackTrace();
 		}
 	}
-	
+
+	/**
+	 * @param userID The numeric ID representing a user.
+	 */
 	private void reqGetUsernameFromUserID(String userID)
 	{
 		ReadRequest rr = new ReadRequest();
@@ -124,10 +131,22 @@ public class OpenAirCalendar extends CSCalendar{
 		OaUser user = new OaUser();
 		user.setId(userID);
 		rr.setObjects(new OaBase[]{user});
-		Attribute attr = new Attribute();
-		attr.setName("limit");
+		rr.setAttributes(new Attribute[]{this.LIMIT});
+		this.reads.add(rr);
 	}
-	
+
+	private void reqGetProjectNameFromProjectID(String projectID)
+	{
+		ReadRequest rr = new ReadRequest();
+		rr.setType("Project");
+		rr.setMethod("equal to");
+		OaProject project = new OaProject();
+		project.setId(projectID);
+		rr.setObjects(new OaBase[]{project});
+		rr.setAttributes(new Attribute[]{this.LIMIT});
+		this.reads.add(rr);
+	}
+
 	/**
 	 * Get all bookings stored in openair for the provided userID.
 	 * @param userID The numeric userID for a user - for example, "78"
@@ -144,7 +163,7 @@ public class OpenAirCalendar extends CSCalendar{
 		rr.setAttributes(new Attribute[]{this.LIMIT});
 		this.reads.add(rr);
 	}
-	
+
 	/**
 	 * Get all booking requests stored in openair for the provided userID.
 	 * @param userID The numeric userID for a user - for example, "78".
@@ -161,7 +180,7 @@ public class OpenAirCalendar extends CSCalendar{
 		rr.setAttributes(new Attribute[]{this.LIMIT});
 		this.reads.add(rr);
 	}
-	
+
 	/**
 	 * Submit the accumulated read requests. Upon successful submission, will reset the readRequestIndex so that the request array is reset.
 	 * @return The results in a ReadResult array. The maximum size of the array is determined by the value of CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT.
@@ -174,9 +193,9 @@ public class OpenAirCalendar extends CSCalendar{
 		{
 			if(i > CSConstants.OPENAIR_REQUEST_COUNT_LIMIT) break;
 			requests[i] = this.reads.get(i);
-			
+
 		}
-		
+
 		ReadResult [] results = null;
 		try {
 			results = this.csoaSession.getStub().read(requests);
@@ -190,30 +209,94 @@ public class OpenAirCalendar extends CSCalendar{
 	}
 
 	/**
-	 * Gets all Bookings for a given userID between the specified dates contained in the requestParams map.
-	 * @param requestParams A map of all the request attributes.
-	 * @return An arrayList of CSEvent objects containing an even that fits the requestParam parameters
-	 * @throws ParseException thrown if the provided date cannot be parsed.
+	 * 
 	 */
-	private ArrayList<CSEvent> getBookingsByUserID(Map<String, String> requestParams) throws ParseException
+	private CSEvent parseOaBooking(OaBooking booking, Date searchStartDate, Date searchEndDate)
 	{
-		Date searchStartDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
-		Date searchEndDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
-		
-		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
-		ReadResult[] results = null;
-		CSEvent event = null;
+		CSEvent event;
+		OaBooking resBooking;
 		Date startDate = null;
 		Date endDate = null;
 		Date creationDate = null;
 		String description = null;
 		String subject = null;
-		
-		String userID = requestParams.get(CSConstants.REQUEST_PARAM_OPENAIR_USERID);
-		reqBookingByUserID(userID);
-		results = submitReadRequest();
-		
-		OaBooking resBooking;
+
+		resBooking = booking;
+		event = new CSEvent();
+		ReadResult[] results;
+		ArrayList<CSEvent> params;
+		String responseObjectType;
+		String userName = null;
+		String projectName = null;
+		OaUser user;
+		OaProject project;
+
+		try {
+			startDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getStartdate());
+			endDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getEnddate());
+			if(!(endDate.before(searchStartDate) || startDate.after(searchEndDate)))
+			{
+				//Increment by a second since OpenAir sets the time to 00:00:00 which in some calendars doesn't roll over to the next day.
+				startDate.setSeconds(1);
+				endDate.setSeconds(1);
+
+				reqGetUsernameFromUserID(resBooking.getUserid());
+				reqGetProjectNameFromProjectID(resBooking.getProjectid());
+				results = submitReadRequest();
+
+				if(results != null)
+				{
+					for(ReadResult result: results)
+					{
+						if(result.getObjects() != null)
+						{
+							OaBase[] retObjects = result.getObjects();
+							for(OaBase object: retObjects)
+							{
+								responseObjectType = object.getClass().getName();
+								if(responseObjectType.equals(OaUser.class.getName()))
+								{
+									user = (OaUser) object;
+									userName = user.getAddr_first() + " " + user.getAddr_last();
+								}
+								if(responseObjectType.equals(OaProject.class.getName()))
+								{
+									project = (OaProject) object;
+									projectName = project.getName();
+								}
+							}
+						}
+					}
+				}
+				creationDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getCreated());
+				
+				
+				subject = userName +" " +
+						resBooking.getPercentage() + "% - " +
+						projectName + " - " +
+						(endDate.getMonth()+1)+"/"+endDate.getDate()+"/"+(endDate.getYear()+1900);
+				description = "Created: " + creationDate.toString();
+
+				return new CSEvent(startDate, endDate, subject, description);
+			}
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+
+	}
+
+	private ArrayList<CSEvent> parseCalendarResults(ReadResult[] results, Date searchStartDate, Date searchEndDate)
+	{
+		CSEvent event = null;
+		String responseObjectType;
+		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
+
+		/*
+		 * Iterate through each result in the response array. Each result can contain multiple search results.
+		 * Iterate through the results and parse the results and add to the event object.
+		 */
 		for(ReadResult result: results)
 		{
 			if(result.getObjects() != null)
@@ -221,41 +304,52 @@ public class OpenAirCalendar extends CSCalendar{
 				OaBase[] retObjects = result.getObjects();
 				for(OaBase object: retObjects)
 				{
-					resBooking = (OaBooking) object;
-					event = new CSEvent();
-					
-					startDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getStartdate());
-					endDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getEnddate());
-					
-					if(!(endDate.before(searchStartDate) || startDate.after(searchEndDate)))
+					responseObjectType = object.getClass().getName();
+					if(responseObjectType.equals(OaBooking.class.getName()))
 					{
-						
-						startDate.setSeconds(1);
-						endDate.setSeconds(1);
-						
-						creationDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getCreated());
-						subject = resBooking.getUserid() +" " + resBooking.getPercentage() + "% - " +
-								resBooking.getProjectid() + " - " + resBooking.getEnddate();
-						description = "Created: " + creationDate.toString();
-						
-						events.add(new CSEvent(startDate, endDate, subject, description));
+						event = parseOaBooking((OaBooking) object, searchStartDate, searchEndDate);
+						if(event != null)
+						{
+							events.add(event);
+						}
 					}
 				}
 			}
 		}
 		return events;
 	}
-	
+
+	/**
+	 * Gets all Bookings for a given userID between the specified dates contained in the requestParams map.
+	 * @param requestParams A map of all the request attributes.
+	 * @return An arrayList of CSEvent objects containing an even that fits the requestParam parameters
+	 * @throws ParseException thrown if the provided date cannot be parsed.
+	 */
+	private ArrayList<CSEvent> getBookingsByUserID(Map<String, String> requestParams) throws ParseException
+	{
+
+		Date searchStartDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
+		Date searchEndDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
+
+		ReadResult[] results = null;
+
+		String userID = requestParams.get(CSConstants.REQUEST_PARAM_OPENAIR_USERID);
+		reqBookingByUserID(userID);
+		results = submitReadRequest();
+
+		return parseCalendarResults(results, searchStartDate, searchEndDate);
+	}
+
 	/**
 	 * Obtains all events that occur between the provided dates
 	 * @param requestParams The map object containing all parameters regarding the request.
 	 * @return ArrayList<CSEvent> an arrayList of all events retrieved that match the description from requestParams.
 	 */
 	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
-		
+
 		String operationType = requestParams.get(CSConstants.REQUEST_PARAM_OPERATION_TYPE);
-		
-		
+
+
 		if(operationType.equals(CSOAOPERATIONS.BOOKINGS_BY_UID.value()))
 		{
 			return getBookingsByUserID(requestParams);
@@ -268,7 +362,7 @@ public class OpenAirCalendar extends CSCalendar{
 		// TODO Auto-generated method stub
 		//Not yet implemented
 	}
-	
-	
-	
+
+
+
 }

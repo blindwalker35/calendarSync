@@ -7,6 +7,8 @@
 
 package openair.wsdl;
 
+import openair.objects.OpenAirDeserializer;
+
 public class OaUser  extends openair.wsdl.OaBase  implements java.io.Serializable {
     private java.lang.String addr_mobile;
 
@@ -3977,7 +3979,7 @@ public class OaUser  extends openair.wsdl.OaBase  implements java.io.Serializabl
            java.lang.Class _javaType,  
            javax.xml.namespace.QName _xmlType) {
         return 
-          new  org.apache.axis.encoding.ser.BeanDeserializer(
+          new  OpenAirDeserializer(
             _javaType, _xmlType, typeDesc);
     }
 

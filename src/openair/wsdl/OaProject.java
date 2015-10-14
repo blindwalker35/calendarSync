@@ -7,6 +7,8 @@
 
 package openair.wsdl;
 
+import openair.objects.OpenAirDeserializer;
+
 public class OaProject  extends openair.wsdl.OaBase  implements java.io.Serializable {
     private java.lang.String user_filter;
 
@@ -3928,12 +3930,12 @@ public class OaProject  extends openair.wsdl.OaBase  implements java.io.Serializ
      * Get Custom Deserializer
      */
     public static org.apache.axis.encoding.Deserializer getDeserializer(
-           java.lang.String mechType, 
-           java.lang.Class _javaType,  
-           javax.xml.namespace.QName _xmlType) {
-        return 
-          new  org.apache.axis.encoding.ser.BeanDeserializer(
-            _javaType, _xmlType, typeDesc);
-    }
+            java.lang.String mechType, 
+            java.lang.Class _javaType,  
+            javax.xml.namespace.QName _xmlType) {
+         return 
+           new  OpenAirDeserializer(
+             _javaType, _xmlType, typeDesc);
+     }
 
 }

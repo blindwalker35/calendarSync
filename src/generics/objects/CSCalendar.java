@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class CSCalendar{
-	ArrayList<CSEvent> events;
 	/**
 	 * Get all events that occur between the given START_DATE and END_DATE parameters.
 	 * 

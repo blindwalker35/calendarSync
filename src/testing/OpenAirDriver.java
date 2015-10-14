@@ -41,6 +41,7 @@ public class OpenAirDriver {
 		
 		//testGetBookingsByUserID(oac,testUID);
 		//testGetBookingRequestsByUserID(oac, testUID);
+		//testGettingUsernameFromUserID(oac,testUID);
 		testAbstractMethodGetEventsForBookingsByUID(oac, testUID);
 	}
 
