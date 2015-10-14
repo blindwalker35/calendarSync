@@ -27,6 +27,8 @@ import openair.wsdl.OaBooking_request;
 import openair.wsdl.OaCustomField;
 import openair.wsdl.OaDate;
 import openair.wsdl.OaProject;
+import openair.wsdl.OaProjectassign;
+import openair.wsdl.OaProjectgroup;
 import openair.wsdl.OaUser;
 import openair.wsdl.ReadRequest;
 import openair.wsdl.ReadResult;
@@ -121,9 +123,10 @@ public class OpenAirCalendar extends CSCalendar{
 	}
 
 	/**
+	 * Get all users stored in OpenAir for the provided userID. This should be a unique number and only return one result.
 	 * @param userID The numeric ID representing a user.
 	 */
-	private void reqGetUsernameFromUserID(String userID)
+	private void reqUserByUserID(String userID)
 	{
 		ReadRequest rr = new ReadRequest();
 		rr.setType("User");
@@ -135,7 +138,11 @@ public class OpenAirCalendar extends CSCalendar{
 		this.reads.add(rr);
 	}
 
-	private void reqGetProjectNameFromProjectID(String projectID)
+	/**
+	 * Get all projects stored in OpenAir for the provided projectID.
+	 * @param projectID The numeric projectID for a project - for example, "826"
+	 */
+	private void reqProjectByProjectID(String projectID)
 	{
 		ReadRequest rr = new ReadRequest();
 		rr.setType("Project");
@@ -209,7 +216,7 @@ public class OpenAirCalendar extends CSCalendar{
 	}
 
 	/**
-	 * 
+	 * Parses an OaBooking and returns a CSEvent object if it fits within the search dates.
 	 */
 	private CSEvent parseOaBooking(OaBooking booking, Date searchStartDate, Date searchEndDate)
 	{
@@ -234,54 +241,54 @@ public class OpenAirCalendar extends CSCalendar{
 		try {
 			startDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getStartdate());
 			endDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getEnddate());
-			if(!(endDate.before(searchStartDate) || startDate.after(searchEndDate)))
+			creationDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getCreated());
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		if(!(endDate.before(searchStartDate) || startDate.after(searchEndDate)))
+		{
+			//Increment by a second since OpenAir sets the time to 00:00:00 which in some calendars doesn't roll over to the next day.
+			startDate.setSeconds(1);
+			endDate.setSeconds(1);
+
+			reqUserByUserID(resBooking.getUserid());
+			reqProjectByProjectID(resBooking.getProjectid());
+			results = submitReadRequest();
+
+			if(results != null)
 			{
-				//Increment by a second since OpenAir sets the time to 00:00:00 which in some calendars doesn't roll over to the next day.
-				startDate.setSeconds(1);
-				endDate.setSeconds(1);
-
-				reqGetUsernameFromUserID(resBooking.getUserid());
-				reqGetProjectNameFromProjectID(resBooking.getProjectid());
-				results = submitReadRequest();
-
-				if(results != null)
+				for(ReadResult result: results)
 				{
-					for(ReadResult result: results)
+					if(result.getObjects() != null)
 					{
-						if(result.getObjects() != null)
+						OaBase[] retObjects = result.getObjects();
+						for(OaBase object: retObjects)
 						{
-							OaBase[] retObjects = result.getObjects();
-							for(OaBase object: retObjects)
+							responseObjectType = object.getClass().getName();
+							if(responseObjectType.equals(OaUser.class.getName()))
 							{
-								responseObjectType = object.getClass().getName();
-								if(responseObjectType.equals(OaUser.class.getName()))
-								{
-									user = (OaUser) object;
-									userName = user.getAddr_first() + " " + user.getAddr_last();
-								}
-								if(responseObjectType.equals(OaProject.class.getName()))
-								{
-									project = (OaProject) object;
-									projectName = project.getName();
-								}
+								user = (OaUser) object;
+								userName = user.getAddr_first() + " " + user.getAddr_last();
+							}
+							if(responseObjectType.equals(OaProject.class.getName()))
+							{
+								project = (OaProject) object;
+								projectName = project.getName();
 							}
 						}
 					}
 				}
-				creationDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getCreated());
-				
-				
-				subject = userName +" " +
-						resBooking.getPercentage() + "% - " +
-						projectName + " - " +
-						(endDate.getMonth()+1)+"/"+endDate.getDate()+"/"+(endDate.getYear()+1900);
-				description = "Created: " + creationDate.toString();
-
-				return new CSEvent(startDate, endDate, subject, description);
 			}
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+
+			subject = userName +" " +
+					resBooking.getPercentage() + "% - " +
+					projectName + " - " +
+					(endDate.getMonth()+1)+"/"+endDate.getDate()+"/"+(endDate.getYear()+1900);
+			description = "Created: " + creationDate.toString();
+			
+			return new CSEvent(startDate, endDate, subject, description);
 		}
 		return null;
 

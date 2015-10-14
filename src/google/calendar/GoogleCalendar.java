@@ -386,7 +386,7 @@ public class GoogleCalendar extends CSCalendar{
 		
 		/**
 		 * This loop iterates through the dates in the range provided using the datePlusOne method.
-		 * Because I'm an idiot, you have to instantiate a CSMONTHS object to "generate" a new month.
+		 * Because I'm an idiot, you have to instantiate a CSMONTHS object to "generate" a new month so a singleton is used.
 		 */
 		for(Date currDate = eventStartDate; currDate.before(eventEndDate); currDate = 
 				CalendarSyncHelper.datePlusOne(CSConstants.CSMONTHS_SNGL.getMonthWithValue(currDate.getMonth()+1), currDate.getDate(), currDate.getYear()+CSConstants.YEAR_CONSTANT))
