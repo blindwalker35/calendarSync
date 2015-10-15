@@ -2,7 +2,6 @@ package testing;
 
 import generics.objects.CSConstants;
 import generics.objects.CSEvent;
-import google.calendar.GoogleCalendar;
 
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -12,13 +11,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 
-import openair.calendar.CSOAOPERATIONS;
-import openair.calendar.OpenAirCalendar;
-import openair.calendar.OpenAirCalendarFactory;
-import openair.wsdl.OaBase;
-import openair.wsdl.OaBooking;
-import openair.wsdl.OaBooking_request;
-import openair.wsdl.ReadResult;
+import modules.google.calendar.GoogleCalendar;
+import modules.openair.calendar.CSOAOPERATIONS;
+import modules.openair.calendar.OpenAirCalendar;
+import modules.openair.calendar.OpenAirCalendarFactory;
+import modules.openair.wsdl.OaBase;
+import modules.openair.wsdl.OaBooking;
+import modules.openair.wsdl.OaBooking_request;
+import modules.openair.wsdl.ReadResult;
 
 public class OpenAirDriver {
 	private CalendarSyncProperties properties;

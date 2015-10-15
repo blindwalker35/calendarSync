@@ -5,7 +5,6 @@ import generics.objects.CSCalendar;
 import generics.objects.CSConstants;
 import generics.objects.CSEvent;
 import generics.objects.CSMONTHS;
-import google.calendar.GoogleCalendar;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -17,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Logger;
+
+import modules.google.calendar.GoogleCalendar;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.gson.JsonSyntaxException;

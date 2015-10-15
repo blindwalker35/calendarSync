@@ -2,7 +2,6 @@ package testing;
 
 import generics.objects.CSConstants;
 import generics.objects.CSEvent;
-import google.calendar.GoogleCalendar;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -12,9 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import openair.calendar.CSOAOPERATIONS;
-import openair.calendar.OpenAirCalendar;
-import openair.calendar.OpenAirCalendarFactory;
+import modules.google.calendar.GoogleCalendar;
+import modules.openair.calendar.CSOAOPERATIONS;
+import modules.openair.calendar.OpenAirCalendar;
+import modules.openair.calendar.OpenAirCalendarFactory;
 
 public class TestDriver {
 

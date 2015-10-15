@@ -1,7 +1,6 @@
 package drivers;
 
 import generics.objects.CSConstants;
-import google.calendar.GoogleCalendar;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -9,7 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import logging.CalendarSyncLogger;
-import openair.calendar.OpenAirCalendar;
+import modules.google.calendar.GoogleCalendar;
+import modules.openair.calendar.OpenAirCalendar;
 import testing.CalendarSyncProperties;
 import testing.GoogleCalendarDriver;
 import testing.OpenAirDriver;
