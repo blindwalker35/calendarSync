@@ -10,6 +10,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import openair.calendar.CSOAOPERATIONS;
 import openair.calendar.OpenAirCalendar;
@@ -18,6 +19,7 @@ import openair.calendar.OpenAirCalendarFactory;
 public class TestDriver {
 
 	private CalendarSyncProperties properties;
+	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
 	public TestDriver(CalendarSyncProperties properties)
 	{
@@ -28,6 +30,7 @@ public class TestDriver {
 	{
 		testOaToGoogle("78");
 	}
+	
 	//Test Cross Platform Functions
 	public void testOaToGoogle(String userID)
 	{

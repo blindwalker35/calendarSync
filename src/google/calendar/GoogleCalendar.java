@@ -12,6 +12,8 @@ import google.gson.CalendarListJSON;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -19,6 +21,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import testing.CalendarSyncProperties;
 
@@ -99,13 +102,18 @@ public class GoogleCalendar extends CSCalendar{
 	private final String APPLICATION_NAME = "TEST_APPLICATION";
 	private Calendar calendar;
 	private final String CALENDAR_NAME;
+	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
 	
 	public GoogleCalendar(CalendarSyncProperties csp) throws GeneralSecurityException, IOException
-	{
+	{		
+		LOGGER.info("Initializing GoogleCalendar module...");
 		String clientID = csp.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTID);
 		String clientSecret = csp.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTSECRET);
 		this.CALENDAR_NAME = csp.getProperties().getProperty(CSConstants.CSPROPERTY_CALENDARNAME);
 		setup(clientID, clientSecret);
+		LOGGER.info("Initialized GoogleCalendar module...");
+		
 	}
 
 	/**
@@ -119,6 +127,8 @@ public class GoogleCalendar extends CSCalendar{
 
 	private void setup(String clientID, String clientSecret) throws GeneralSecurityException, IOException
 	{
+		
+		LOGGER.finer("Setting up authentication and authorization...");
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 		JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 
@@ -126,11 +136,14 @@ public class GoogleCalendar extends CSCalendar{
 		String redirectUrl = "urn:ietf:wg:oauth:2.0:oob";
 		String scope = "https://www.googleapis.com/auth/calendar";
 
+		LOGGER.finest("Collecting credentials...");
 		GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow(
 				httpTransport, jsonFactory, clientID, clientSecret, Collections.singleton(scope));
 		// Step 1: Authorize
+		LOGGER.finest("Requesting authorization...");
 		String authorizationUrl = flow.newAuthorizationUrl().setRedirectUri(redirectUrl).build();
 
+		
 		// Point or redirect your user to the authorizationUrl.
 		System.out.println("Go to the following link in your browser:");
 		System.out.println(authorizationUrl);
@@ -144,7 +157,8 @@ public class GoogleCalendar extends CSCalendar{
 		// Step 2: Exchange
 		GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUrl).execute();
 		// End of Step 2
-
+		LOGGER.finest("Authorized user...");
+		
 		Credential credential = new GoogleCredential.Builder()
 		.setTransport(httpTransport)
 		.setJsonFactory(jsonFactory)
@@ -152,8 +166,10 @@ public class GoogleCalendar extends CSCalendar{
 		.build().setFromTokenResponse(response);
 
 		this.calendar = new Calendar.Builder(httpTransport, jsonFactory, credential).setApplicationName(this.APPLICATION_NAME).build();
-
+		LOGGER.finer("Finished authentication and authorization...");
+		
 		System.out.println("Done authentication and authorization...");
+		
 	}
 
 	/**
@@ -161,7 +177,11 @@ public class GoogleCalendar extends CSCalendar{
 	 * 
 	 * @return The calendar object.
 	 */
-	public Calendar getCalendar(){return this.calendar;}
+	public Calendar getCalendar()
+	{
+		LOGGER.finer("Retrieving calendar...");
+		return this.calendar;
+	}
 
 	/**
 	 * Gets all calendars for the user specified during setup
@@ -170,16 +190,22 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 	public CalendarListJSON getCalendars()
 	{
+		LOGGER.finer("Retrieving calendars...");
 		try {
 			CalendarList calendars = this.calendar.calendarList().list().execute();
-
 			Gson gson = new Gson();
+			LOGGER.finest("Converting JSON object to Java CalendarListJSON object...");
 			return gson.fromJson(calendars.toString(), CalendarListJSON.class);
 
-		} catch (IOException e) {
-			e.printStackTrace();
+		} catch (IOException e) 
+		{
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			
+			LOGGER.severe("IOException occurred trying to get all calendars: \n" + e.toString());
 			return null;
 		}
+		
 	}
 
 	/**
@@ -200,12 +226,15 @@ public class GoogleCalendar extends CSCalendar{
 	@SuppressWarnings("deprecation")
 	public List<CSEvent> getEventsForDayOnCalendar(CSMONTHS month, int day, int year) throws GoogleCalendarDateFormatException, JsonSyntaxException, IOException, ParseException
 	{
+		
+		LOGGER.finer("Getting events from specified day on calendar...");
 		//Check to make sure the provided values are valid
 		if(!CalendarSyncHelper.isValidDay(month, day, year))
 		{
 			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
 		}
 
+		LOGGER.finest("Getting list of events from calendar...");
 		Gson gson = new Gson();
 		CalendarListEntryJSON calendarListEntry = gson.fromJson(this.calendar.calendarList().get(this.CALENDAR_NAME).execute().toPrettyString(), CalendarListEntryJSON.class);
 
@@ -220,6 +249,8 @@ public class GoogleCalendar extends CSCalendar{
 		//Create end date based on provided values
 		Date endDate = CalendarSyncHelper.datePlusOne(month, day, year);
 
+		LOGGER.finest("Provided search date filter: Month="+ month.getMonth() + " Day=" + day +" Year=" + year);
+		LOGGER.finest("Applying search date filter...");
 		/* Iterate through all events on calendar to verify if event occurs between given dates
 		 * */
 		List<CSEvent> retEvents = new ArrayList<CSEvent>();
@@ -245,6 +276,7 @@ public class GoogleCalendar extends CSCalendar{
 	@SuppressWarnings("deprecation")
 	public void setEventForDayOnCalendar(CSEvent event, String calendarID) throws GoogleCalendarDateFormatException, IOException
 	{
+		LOGGER.finer("Setting event for specified day on specified calendar...");
 		int litMonth, day, year;
 		
 		Date date = event.getStartDate();
@@ -260,6 +292,7 @@ public class GoogleCalendar extends CSCalendar{
 			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
 		}
 
+		LOGGER.finer("Converting specified CSEvent object to an Event object...");
 		Event converted = convertCSEventToEvent(event);
 		Event createdEvent = this.calendar.events().insert(calendarID, converted).execute();
 		
@@ -277,8 +310,8 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 	private boolean isEventBetweenDates(Date startDate, Date endDate, Event event) throws ParseException
 	{
+		LOGGER.finer("Checking if event is between specified dates...");
 		EventDateTime eventStart = null, eventEnd = null;
-
 
 		Date eventStartDate = null, eventEndDate = null;
 		String strStartDate, strEndDate;
@@ -329,7 +362,7 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 	private CSEvent convertEventToCSEvent(Event event) throws ParseException
 	{
-
+		LOGGER.finer("Converting Event object to CSEvent object...");
 		Date eventStartDate = null, eventEndDate = null;
 
 		if(event.getStart() != null)
@@ -359,6 +392,7 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 	private Event convertCSEventToEvent(CSEvent csevent)
 	{
+		LOGGER.finer("Converting CSEvent object to Event object...");
 		Event event = new Event();		
 
 		DateTime startDateTime = new DateTime(csevent.getStartDate());
@@ -373,13 +407,17 @@ public class GoogleCalendar extends CSCalendar{
 		
 		event.setDescription(csevent.getDescription());
 		event.setSummary(csevent.getSubject());
+		
 		return event;
 	}
 
 	/**
 	 * Implementation of abstract method from parent class - CSCalendar.
 	 */
-	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
+	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException 
+	{
+		LOGGER.finer("Getting events based on request parameters...");
+		
 		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
 		Date eventStartDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
 		Date eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
@@ -397,14 +435,20 @@ public class GoogleCalendar extends CSCalendar{
 					events.add(dayEvent);
 				}
 			} catch (JsonSyntaxException e) {
-				e.printStackTrace();
+				StringWriter errors = new StringWriter();
+				e.printStackTrace(new PrintWriter(errors));
+				LOGGER.severe("JsonSyntaxException occurred trying to get all events from calendar: \n" + e.toString());
 			} catch (GoogleCalendarDateFormatException e) {
-				e.printStackTrace();
+				StringWriter errors = new StringWriter();
+				e.printStackTrace(new PrintWriter(errors));
+				LOGGER.severe("GoogleCalendarDateFormatException occurred trying to get all events from calendar: \n" + e.toString());
 			} catch (IOException e) {
-				e.printStackTrace();
+				StringWriter errors = new StringWriter();
+				e.printStackTrace(new PrintWriter(errors));
+				LOGGER.severe("IOException occurred trying to get all events from calendar: \n" + e.toString());
 			}
 		}
-				
+			
 		return events;
 	}
 
@@ -412,15 +456,17 @@ public class GoogleCalendar extends CSCalendar{
 	 * Implementation of abstract method from parent class - CSCalendar.
 	 */
 	public void setEvent(CSEvent event, Map<String, String> requestParams){
+		LOGGER.finer("Setting event based on request parameters...");
 		try {
 			setEventForDayOnCalendar(event, requestParams.get(CSConstants.REQUEST_PARAM_GOOGLE_CALENDAR_ID));
 		} catch (GoogleCalendarDateFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			LOGGER.severe("GoogleCalendarDateFormatException occurred trying to get all events from calendar: \n" + e.toString());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			LOGGER.severe("IOException occurred trying to get all events from calendar: \n" + e.toString());
 		}
-		
 	}
 }

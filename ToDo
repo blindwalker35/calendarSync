@@ -2,5 +2,4 @@ To do list:
 -Logger
 -Logout functionality? Pretty low on priority
 -If batch requests goes over the CSConstants limit, start generating a second (or more) request to send out.
--Look up UID and ProjectID for the name rather than some arbitrary number
 -Duplicate event checks in setEvents method

@@ -20,6 +20,7 @@ public class CSConstants {
 	public static final String CSPROPERTY_OPENAIR_CLIETVERSION = "clientVersion";
 	public static final String CSPROPERTY_OPENAIR_USERNAME = "username";
 	public static final String CSPROPERTY_OPENAIR_PASSWORD = "password";
+	public static final String CSPROPERTY_LOG_LEVEL = "LOG_LEVEL";
 	
 	//RequestParam map key constants
 	public static final String REQUEST_PARAM_START_DATE="START_DATE";

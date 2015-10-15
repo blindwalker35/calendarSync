@@ -4,8 +4,12 @@ import generics.objects.CSConstants;
 import generics.objects.CSMONTHS;
 
 import java.util.Date;
+import java.util.logging.Logger;
 
 public class CalendarSyncHelper {
+	
+	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	
 	/**
 	 * There isn't a particularly good built in way to increment a date in an object class - would have to use
 	 * Java Calendar object - but due to Google package imports, would have to provide full package name to use
@@ -25,6 +29,8 @@ public class CalendarSyncHelper {
 	@SuppressWarnings("deprecation")
 	public static Date datePlusOne(CSMONTHS month, int day, int year)
 	{
+		LOGGER.finer("Incrementing date...");
+		LOGGER.finest("Input: " + month.getMonth()+"/" + day +"/" + year);
 		if(isValidDay(month, day+1, year))
 		{
 			return new Date(year-CSConstants.YEAR_CONSTANT, month.getMonth()-1, day+1);
@@ -86,6 +92,9 @@ public class CalendarSyncHelper {
 	 */
 	public static boolean isValidDay(CSMONTHS month, int day, int year)
 	{
+		LOGGER.finer("Validating date...");
+		LOGGER.finest("Input: " + month.getMonth()+"/" + day +"/" + year);
+		
 		if(year < CSConstants.MIN_YEAR || year > CSConstants.MAX_YEAR){return false;}
 		if(day < 1){return false;}
 

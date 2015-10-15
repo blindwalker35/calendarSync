@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import openair.calendar.CSOAOPERATIONS;
 import openair.calendar.OpenAirCalendar;
@@ -21,6 +22,7 @@ import openair.wsdl.ReadResult;
 
 public class OpenAirDriver {
 	private CalendarSyncProperties properties;
+	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
 	public OpenAirDriver(CalendarSyncProperties properties)
 	{

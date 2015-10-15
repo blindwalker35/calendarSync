@@ -6,13 +6,15 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 import java.util.Properties;
 
 public class CalendarSyncProperties {
 	
 	private Properties properties;
 	private String filepath;
-	
+	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
 	public CalendarSyncProperties(){}
 	public CalendarSyncProperties(String filepath)
 	{

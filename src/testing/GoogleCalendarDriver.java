@@ -16,12 +16,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.logging.Logger;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.gson.JsonSyntaxException;
 
 public class GoogleCalendarDriver{
 	private CalendarSyncProperties properties;
+	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+
 	
 	public GoogleCalendarDriver(CalendarSyncProperties properties){this.properties = properties;}
 	
@@ -42,7 +45,7 @@ public class GoogleCalendarDriver{
 			//tc = new GoogleCalendar(clientID, clientSecret, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
 			tc = new GoogleCalendar(this.properties);
 			//testGetCalendars(tc);
-			//testGetEventsForDayOnCalendar(tc);
+			testGetEventsForDayOnCalendar(tc);
 			//testSetEventForDayOnCalendar(tc);
 			testAbstractMethodGetEvents(tc);
 		} catch (GeneralSecurityException e) {

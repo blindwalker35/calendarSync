@@ -1,10 +1,14 @@
 package drivers;
 
+import generics.objects.CSConstants;
 import google.calendar.GoogleCalendar;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import logging.CalendarSyncLogger;
 import openair.calendar.OpenAirCalendar;
 import testing.CalendarSyncProperties;
 import testing.GoogleCalendarDriver;
@@ -13,6 +17,8 @@ import testing.TestDriver;
 
 
 public class Driver {
+	private static final Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	
 	public static void main(String[] args)
 	{	
 		
@@ -25,7 +31,17 @@ public class Driver {
 			e.printStackTrace();
 			System.out.println("Oh noooooo....");
 		}
-		
+
+		try {
+			//CalendarSyncLogger.setup(Level.parse((String) csp.getProperties().getProperty(CSConstants.CSPROPERTY_LOG_LEVEL)));
+			CalendarSyncLogger.setup(Level.FINEST);
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		//Test Google Calendar
 //		GoogleCalendarDriver gcd = new GoogleCalendarDriver(csp);
