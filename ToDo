@@ -3,3 +3,7 @@ To do list:
 -Logout functionality? Pretty low on priority
 -If batch requests goes over the CSConstants limit, start generating a second (or more) request to send out.
 -Duplicate event checks in setEvents method
+
+Potential Bottlenecks:
+-When making requests to OpenAir to pull down bookings, the current method is pulling ALL bookings for a user, then applying a filter locally on the client.
+	-If possible, want to apply filter server side to reduce traffic incoming to the client.

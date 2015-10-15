@@ -33,8 +33,8 @@ public class Driver {
 		}
 
 		try {
-			//CalendarSyncLogger.setup(Level.parse((String) csp.getProperties().getProperty(CSConstants.CSPROPERTY_LOG_LEVEL)));
-			CalendarSyncLogger.setup(Level.FINEST);
+			CalendarSyncLogger.setup(Level.parse((String) csp.getProperties().getProperty(CSConstants.CSPROPERTY_LOG_LEVEL)));
+//			CalendarSyncLogger.setup(Level.FINEST);
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
