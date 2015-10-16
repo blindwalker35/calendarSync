@@ -18,20 +18,23 @@ public class CSEvent {
 	Date endDate;
 	String subject;
 	String description;
+	String uniqueIdentifier;
 	
 	public CSEvent(){}
 	
-	public CSEvent(Date startDate, Date endDate, String subject, String description)
+	public CSEvent(Date startDate, Date endDate, String subject, String description, String uniqueIdentifier)
 	{
 		this.startDate = startDate;
 		this.endDate = endDate;
 		this.subject = subject;
 		this.description = description;
+		this.uniqueIdentifier = uniqueIdentifier;
 	}
 	
 	public Date getStartDate(){return this.startDate;}
 	public Date getEndDate(){return this.endDate;}
 	public String getSubject(){return this.subject;}
-	public String getDescription(){return this.description;} 
+	public String getDescription(){return this.description;}
+	public String getUniqueIdentifier(){return this.uniqueIdentifier;}
 	
 }

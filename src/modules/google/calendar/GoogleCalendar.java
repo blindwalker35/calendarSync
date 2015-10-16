@@ -211,29 +211,19 @@ public class GoogleCalendar extends CSCalendar{
 	/**
 	 * Gets all events listed on a calendar for a given day of the year.
 	 * 
-	 * @param month	The month of the year to look for events.
-	 * @param day	The day of the month to look for events. The day provided should be 1-based (not 0-based).
-	 * @param year	The year to look for events. The year should be the current year (for example, 2015).
-	 * @param calendarName	The name of the calendar to look at events for.
-	 *  The value for this is found in the Calendar Details by navigating in Google Calendar from <p/>
-	 *  Calendar Settings--> Calendar Address --> Calendar ID.
+	 * @param searchStartDate The first date to include when looking for events.
+	 * @param searchEndDate The last date to include when looking for events.
 	 * @return A list of all events occurring on the provided date and calendar.
 	 * @throws DateFormatException Thrown if invalid dates are provided.
 	 * @throws JsonSyntaxException Thrown if the JSON cannot be parsed into the provided class.
 	 * @throws IOException 	Thrown if various HTTP requests cannot be completed.
 	 * @throws ParseException	Thrown if the provided dates cannot be parsed into the expected date format.
 	 */
-	@SuppressWarnings("deprecation")
-	public List<CSEvent> getEventsForDayOnCalendar(CSMONTHS month, int day, int year) throws GoogleCalendarDateFormatException, JsonSyntaxException, IOException, ParseException
+	
+	public List<CSEvent> getEventsForRangeOfDatesOnCalendar(Date searchStartDate, Date searchEndDate) throws JsonSyntaxException, IOException, ParseException
 	{
+		LOGGER.finer("Getting events for range of dates on a calendar...");
 		
-		LOGGER.finer("Getting events from specified day on calendar...");
-		//Check to make sure the provided values are valid
-		if(!CalendarSyncHelper.isValidDay(month, day, year))
-		{
-			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
-		}
-
 		LOGGER.finest("Getting list of events from calendar...");
 		Gson gson = new Gson();
 		CalendarListEntryJSON calendarListEntry = gson.fromJson(this.calendar.calendarList().get(this.CALENDAR_NAME).execute().toPrettyString(), CalendarListEntryJSON.class);
@@ -243,26 +233,19 @@ public class GoogleCalendar extends CSCalendar{
 
 		events = this.calendar.events().list(calendarListEntry.getID()).setPageToken(pageToken).execute();
 
-		//Year is based on 1900, Month is 0 indexed. Have to use deprecated Date due to Google's constructors for DateTime object
-		Date startDate = new Date(year-CSConstants.YEAR_CONSTANT, month.getMonth()-1, day);
-
-		//Create end date based on provided values
-		Date endDate = CalendarSyncHelper.datePlusOne(month, day, year);
-
-		LOGGER.finest("Provided search date filter: Month="+ month.getMonth() + " Day=" + day +" Year=" + year);
-		LOGGER.finest("Applying search date filter...");
 		/* Iterate through all events on calendar to verify if event occurs between given dates
 		 * */
+		LOGGER.finest("Applying search filter on events...");
 		List<CSEvent> retEvents = new ArrayList<CSEvent>();
 		for(Event event: events.getItems())
 		{
-			if(isEventBetweenDates(startDate, endDate, event))
+			if(isEventBetweenDates(searchStartDate, searchEndDate, event))
 			{
 				retEvents.add(convertEventToCSEvent(event));
 			}
 		}
+		
 		return retEvents;
-
 	}
 
 	/**
@@ -375,7 +358,7 @@ public class GoogleCalendar extends CSCalendar{
 			eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(event.getEnd().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
 		}
 
-		return new CSEvent(eventStartDate, eventEndDate, event.getSummary(), event.getDescription());
+		return new CSEvent(eventStartDate, eventEndDate, event.getSummary(), event.getDescription(), "");
 	}
 
 	/**
@@ -430,7 +413,7 @@ public class GoogleCalendar extends CSCalendar{
 				CalendarSyncHelper.datePlusOne(CSConstants.CSMONTHS_SNGL.getMonthWithValue(currDate.getMonth()+1), currDate.getDate(), currDate.getYear()+CSConstants.YEAR_CONSTANT))
 		{
 			try {
-				for(CSEvent dayEvent: getEventsForDayOnCalendar(CSConstants.CSMONTHS_SNGL.getMonthWithValue(currDate.getMonth()+1), currDate.getDate()-1, currDate.getYear()+CSConstants.YEAR_CONSTANT))
+				for(CSEvent dayEvent: getEventsForRangeOfDatesOnCalendar(eventStartDate, eventEndDate))
 				{
 					events.add(dayEvent);
 				}
@@ -438,10 +421,6 @@ public class GoogleCalendar extends CSCalendar{
 				StringWriter errors = new StringWriter();
 				e.printStackTrace(new PrintWriter(errors));
 				LOGGER.severe("JsonSyntaxException occurred trying to get all events from calendar: \n" + e.toString());
-			} catch (GoogleCalendarDateFormatException e) {
-				StringWriter errors = new StringWriter();
-				e.printStackTrace(new PrintWriter(errors));
-				LOGGER.severe("GoogleCalendarDateFormatException occurred trying to get all events from calendar: \n" + e.toString());
 			} catch (IOException e) {
 				StringWriter errors = new StringWriter();
 				e.printStackTrace(new PrintWriter(errors));

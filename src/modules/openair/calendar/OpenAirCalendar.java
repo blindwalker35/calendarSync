@@ -18,6 +18,8 @@ import javax.xml.soap.SOAPException;
 import modules.openair.objects.CSOASession;
 import modules.openair.wsdl.Attribute;
 import modules.openair.wsdl.LoginResult;
+import modules.openair.wsdl.MakeURLRequest;
+import modules.openair.wsdl.MakeURLResult;
 import modules.openair.wsdl.OAirServiceHandlerServiceLocator;
 import modules.openair.wsdl.OaBase;
 import modules.openair.wsdl.OaBooking;
@@ -49,7 +51,7 @@ import testing.CalendarSyncProperties;
 public class OpenAirCalendar extends CSCalendar{
 
 	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
-	
+
 	//Attributes required to make OpenAir API Calls
 	private String username;
 	private String password;
@@ -121,17 +123,17 @@ public class OpenAirCalendar extends CSCalendar{
 		} catch (RemoteException e) {
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
-			
+
 			LOGGER.severe("RemoteException occurred trying to login user: \n" + e.toString());
 		} catch (ServiceException e) {
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
-			
+
 			LOGGER.severe("ServiceException occurred trying to login user: \n" + e.toString());
 		} catch (SOAPException e) {
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
-			
+
 			LOGGER.severe("SOAPException occurred trying to login user: \n" + e.toString());
 		}
 	}
@@ -206,6 +208,55 @@ public class OpenAirCalendar extends CSCalendar{
 		this.reads.add(rr);
 	}
 
+	private String generateProjectURL(String projectID) throws RemoteException
+	{
+		LOGGER.finer("Generating OaProject URL based on project ID...");
+		String URL = null;
+		MakeURLResult[] mkresults = null;
+
+		MakeURLRequest make = new MakeURLRequest();
+		make.setUid(this.csoaSession.getSessionID());
+		make.setApp("pm");
+		make.setPage("dashboard-project");
+		OaProject project = new OaProject();
+		project.setId(projectID);
+		make.setArg(project);
+
+		mkresults = this.csoaSession.getStub().makeURL(new MakeURLRequest[]{make});
+
+		if(mkresults != null)
+		{
+			for(MakeURLResult result: mkresults)
+			{
+				return URL = result.getUrl();
+			}
+		}
+		return URL;
+	}
+	
+	private String generateBookingURL(String bookingID) throws RemoteException
+	{
+		LOGGER.finer("Generating OaBooking URL based on booking ID...");
+		String URL = null;
+		MakeURLResult[] mkresults = null;
+
+		MakeURLRequest make = new MakeURLRequest();
+		make.setUid(this.csoaSession.getSessionID());
+		make.setApp("rm");
+		make.setPage("default-url");
+
+		mkresults = this.csoaSession.getStub().makeURL(new MakeURLRequest[]{make});
+
+		if(mkresults != null)
+		{
+			for(MakeURLResult result: mkresults)
+			{
+				return URL = result.getUrl();
+			}
+		}
+		return URL;
+	}
+
 	/**
 	 * Submit the accumulated read requests. Upon successful submission, will reset the readRequestIndex so that the request array is reset.
 	 * @return The results in a ReadResult array. The maximum size of the array is determined by the value of CSConstants.OPENAIR_RESPONSE_COUNT_LIMIT.
@@ -229,7 +280,7 @@ public class OpenAirCalendar extends CSCalendar{
 		} catch (RemoteException e) {
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
-			
+
 			LOGGER.severe("RemoteException occurred trying to login user: \n" + e.toString());
 			return null;
 		}
@@ -257,7 +308,7 @@ public class OpenAirCalendar extends CSCalendar{
 		String userName = null;
 		String projectName = null;
 		OaUser user;
-		OaProject project;
+		OaProject project = null;
 
 		LOGGER.finest("Parsing start, end, and creation dates...");
 		try {
@@ -273,7 +324,7 @@ public class OpenAirCalendar extends CSCalendar{
 		LOGGER.finest("Search start date: " + searchStartDate.toString());
 		LOGGER.finest("Event end date: " + resBooking.getEnddate());
 		LOGGER.finest("Search end date: " + searchEndDate.toString());
-		
+
 		if(!(endDate.before(searchStartDate) || startDate.after(searchEndDate)))
 		{
 			LOGGER.finest("Event occurs between start and end date, generating further requests...");
@@ -311,21 +362,49 @@ public class OpenAirCalendar extends CSCalendar{
 					}
 				}
 			}
-			
+
 			LOGGER.finest("Event occurs between search date, generating CSEvent based on parsed results...");
+
 			subject = userName +" " +
 					resBooking.getPercentage() + "% - " +
 					projectName + " - " +
 					(endDate.getMonth()+1)+"/"+endDate.getDate()+"/"+(endDate.getYear()+1900);
-			description = "Created: " + creationDate.toString();
+			description = "Created:" + CSConstants.EVENT_KEY_VALUE_DELIMITER + " " + creationDate.toString();
+			description += CSConstants.EVENT_DESCRIPTION_DELIMITER;
+			description += "Booking ID" + CSConstants.EVENT_KEY_VALUE_DELIMITER+ " " +  resBooking.getId();
+
+			String uniqueID = null;
 			
-			return new CSEvent(startDate, endDate, subject, description);
+			try {
+				LOGGER.finest("Generating OpenAir URLs...");
+				String projectURL = generateProjectURL(project.getId());
+				String bookingURL = generateBookingURL(resBooking.getId());
+				uniqueID = CSConstants.UNIQUE_EVENT_ID +CSConstants.EVENT_KEY_VALUE_DELIMITER+ " " + CSConstants.OA_CONVERSION_TYPE+ resBooking.getId();
+				description +=  CSConstants.EVENT_DESCRIPTION_DELIMITER;
+				description += "Access Booking at" + CSConstants.EVENT_KEY_VALUE_DELIMITER + " " +  bookingURL;
+				description += CSConstants.EVENT_DESCRIPTION_DELIMITER;
+				description += "Access Project at" + CSConstants.EVENT_KEY_VALUE_DELIMITER + " " +  projectURL;
+				description += CSConstants.EVENT_DESCRIPTION_DELIMITER;
+				description += uniqueID;
+				return new CSEvent(startDate, endDate, subject, description, uniqueID);
+			} catch (RemoteException e) {
+				StringWriter errors = new StringWriter();
+				e.printStackTrace(new PrintWriter(errors));
+				LOGGER.severe("RemoteException occurred trying to make booking URL: \n" + e.toString());
+			}
 		}
 		LOGGER.finest("No event found within search dates, returning null...");
 		return null;
 
 	}
 
+	/**
+	 * Reads in the results from a submitReadRequest call.
+	 * @param results The response from the submitReadRequest() call.
+	 * @param searchStartDate The date to start looking for events from.
+	 * @param searchEndDate The date to finish looking for events from.
+	 * @return An array of all CSEvents that fit the search filter.
+	 */
 	private ArrayList<CSEvent> parseCalendarResults(ReadResult[] results, Date searchStartDate, Date searchEndDate)
 	{
 		LOGGER.finer("Parsing calendar results...");
@@ -337,7 +416,7 @@ public class OpenAirCalendar extends CSCalendar{
 		 * Iterate through each result in the response array. Each result can contain multiple search results.
 		 * Iterate through the results and parse the results and add to the event object.
 		 */
-		
+
 		LOGGER.finest("Reading results of request...");
 		for(ReadResult result: results)
 		{
@@ -390,7 +469,7 @@ public class OpenAirCalendar extends CSCalendar{
 	 */
 	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
 		LOGGER.finer("Getting all events based on request parameters...");
-		
+
 		String operationType = requestParams.get(CSConstants.REQUEST_PARAM_OPERATION_TYPE);
 
 		if(operationType.equals(CSOAOPERATIONS.BOOKINGS_BY_UID.value()))

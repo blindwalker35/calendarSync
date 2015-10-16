@@ -8,6 +8,10 @@ public class CSConstants {
 	public static final int MIN_YEAR = 2010;
 	public static final int MAX_YEAR = 2020;
 	public static final CSMONTHS CSMONTHS_SNGL = CSMONTHS.JAN;
+	public static final String UNIQUE_EVENT_ID = "uniqueEventID";
+	public static final String EVENT_DESCRIPTION_DELIMITER = "\n\n";
+	public static final String EVENT_KEY_VALUE_DELIMITER = ":";
+	public static final String OA_CONVERSION_TYPE = "OpenAir_";
 	
 	//Property file properties
 	public static final String CSPROPERTY_CALENDARNAME = "calendarName";

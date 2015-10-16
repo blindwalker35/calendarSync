@@ -46,7 +46,6 @@ public class GoogleCalendarDriver{
 			//tc = new GoogleCalendar(clientID, clientSecret, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
 			tc = new GoogleCalendar(this.properties);
 			//testGetCalendars(tc);
-			testGetEventsForDayOnCalendar(tc);
 			//testSetEventForDayOnCalendar(tc);
 			testAbstractMethodGetEvents(tc);
 		} catch (GeneralSecurityException e) {
@@ -59,41 +58,6 @@ public class GoogleCalendarDriver{
 	private void testGetCalendars(GoogleCalendar tc)
 	{
 		System.out.println(tc.getCalendars().toString(0));
-	}
-	
-	private void testGetEventsForDayOnCalendar(GoogleCalendar tc)
-	{
-		List<CSEvent> events = null;
-		try {
-			//Get calendar ID from the calendar settings in google calendar.
-			events = tc.getEventsForDayOnCalendar(CSMONTHS.JUN, 2, 2015);
-			for(CSEvent event: events)
-			{
-				System.out.println(event.getSubject());
-				System.out.println(event.getStartDate().toString());
-				System.out.println(event.getEndDate().toString());
-				Date date = event.getStartDate();
-				System.out.println("Date: " + date.getDate());
-				System.out.println("Month: " + date.getMonth());
-				System.out.println("Year: " + date.getYear());
-				System.out.println("Hour: " + date.getHours());
-				System.out.println("Minute: " + date.getMinutes());
-				System.out.println("Second: " + date.getSeconds());
-			}
-		} catch (GoogleCalendarDateFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (JsonSyntaxException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ParseException e) {
-			//exception thrown from simple date format when comparing dates
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 	}
 
 	private void testSetEventForDayOnCalendar(GoogleCalendar tc)
@@ -115,7 +79,7 @@ public class GoogleCalendarDriver{
 		endDate.setMinutes(0);
 		endDate.setSeconds(0);
 		
-		CSEvent event = new CSEvent(startDate, endDate, "Test Event Set", "Test Event Set");
+		CSEvent event = new CSEvent(startDate, endDate, "Test Event Set", "Test Event Set", "");
 		
 		try {
 			tc.setEventForDayOnCalendar(event, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");

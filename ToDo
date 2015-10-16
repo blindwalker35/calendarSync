@@ -3,7 +3,21 @@ To do list:
 -Logout functionality? Pretty low on priority
 -If batch requests goes over the CSConstants limit, start generating a second (or more) request to send out.
 -Duplicate event checks in setEvents method
+	-Implementation begun with uniqueid field added to CSEvent object
+-Use makeURL to provide a URL to the current booking
+-Configurable calendar notifications
+-See if you can pull up resources under a certain manager
+-Calendar updates - resync if event is out of date or has been updated recently
+-Caching
+	-Would have to do local caching first (maybe JSON or XML file)
+	-Eventually want to move cache to memory when application is deployed to server and persists.
+		-Maybe even when application is deployed to server, on application shutdown have it export to a file and load up on startup?
+-UI!!
 
 Potential Bottlenecks:
 -When making requests to OpenAir to pull down bookings, the current method is pulling ALL bookings for a user, then applying a filter locally on the client.
 	-If possible, want to apply filter server side to reduce traffic incoming to the client.
+	
+Feature List:
+-JIRA ticket integration? Maybe create google calendar events for tickets and their due dates
+-Add an option to allow specific set and gets - for example, have code specific to when openair pushes events to google rather than just have CSEvents be the intermediate format
