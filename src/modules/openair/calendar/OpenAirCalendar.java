@@ -297,7 +297,7 @@ public class OpenAirCalendar extends CSCalendar{
 		Date startDate = null;
 		Date endDate = null;
 		Date creationDate = null;
-		String description = null;
+		String description = "";
 		String subject = null;
 
 		resBooking = booking;
@@ -316,8 +316,9 @@ public class OpenAirCalendar extends CSCalendar{
 			endDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getEnddate());
 			creationDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(resBooking.getCreated());
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			LOGGER.severe("ParseException occurred parsing the start, end, and creation dates: \n" + e.toString());
 		}
 
 		LOGGER.finest("Event start date: " + resBooking.getStartdate());
@@ -363,15 +364,14 @@ public class OpenAirCalendar extends CSCalendar{
 				}
 			}
 
-			LOGGER.finest("Event occurs between search date, generating CSEvent based on parsed results...");
+			LOGGER.finest("Generating CSEvent based on parsed results...");
 
 			subject = userName +" " +
 					resBooking.getPercentage() + "% - " +
 					projectName + " - " +
 					(endDate.getMonth()+1)+"/"+endDate.getDate()+"/"+(endDate.getYear()+1900);
-			description = "Created:" + CSConstants.EVENT_KEY_VALUE_DELIMITER + " " + creationDate.toString();
-			description += CSConstants.EVENT_DESCRIPTION_DELIMITER;
-			description += "Booking ID" + CSConstants.EVENT_KEY_VALUE_DELIMITER+ " " +  resBooking.getId();
+			description += CalendarSyncHelper.generateDescription("Created", creationDate.toString());
+			description += CalendarSyncHelper.generateDescription("Booking ID", resBooking.getId());
 
 			String uniqueID = null;
 			
@@ -379,13 +379,14 @@ public class OpenAirCalendar extends CSCalendar{
 				LOGGER.finest("Generating OpenAir URLs...");
 				String projectURL = generateProjectURL(project.getId());
 				String bookingURL = generateBookingURL(resBooking.getId());
-				uniqueID = CSConstants.UNIQUE_EVENT_ID +CSConstants.EVENT_KEY_VALUE_DELIMITER+ " " + CSConstants.OA_CONVERSION_TYPE+ resBooking.getId();
-				description +=  CSConstants.EVENT_DESCRIPTION_DELIMITER;
-				description += "Access Booking at" + CSConstants.EVENT_KEY_VALUE_DELIMITER + " " +  bookingURL;
-				description += CSConstants.EVENT_DESCRIPTION_DELIMITER;
-				description += "Access Project at" + CSConstants.EVENT_KEY_VALUE_DELIMITER + " " +  projectURL;
-				description += CSConstants.EVENT_DESCRIPTION_DELIMITER;
-				description += uniqueID;
+				
+				LOGGER.finest("Generating CSEvent object....");
+				uniqueID = CalendarSyncHelper.generateUniqueID(CSConstants.OA_CONVERSION_TYPE, resBooking.getId());
+				
+				description += CalendarSyncHelper.generateDescription("Access Booking at", bookingURL);
+				description += CalendarSyncHelper.generateDescription("Access Project at", projectURL);
+				description += CalendarSyncHelper.generateDescription(CSConstants.UNIQUE_EVENT_ID, uniqueID);
+
 				return new CSEvent(startDate, endDate, subject, description, uniqueID);
 			} catch (RemoteException e) {
 				StringWriter errors = new StringWriter();
