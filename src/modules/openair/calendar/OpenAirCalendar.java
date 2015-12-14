@@ -37,7 +37,6 @@ import generics.helpers.CalendarSyncHelper;
 import generics.objects.CSCalendar;
 import generics.objects.CSConstants;
 import generics.objects.CSEvent;
-import sun.tools.tree.ThisExpression;
 import testing.CalendarSyncProperties;
 
 /**
