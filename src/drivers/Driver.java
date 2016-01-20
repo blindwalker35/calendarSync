@@ -2,10 +2,17 @@ package drivers;
 
 import generics.objects.CSConstants;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.apache.jcs.JCS;
+import org.apache.jcs.access.exception.CacheException;
+import org.apache.jcs.engine.control.CompositeCacheManager;
 
 import logging.CalendarSyncLogger;
 import modules.google.calendar.GoogleCalendar;
@@ -22,16 +29,21 @@ public class Driver {
 	public static void main(String[] args)
 	{	
 		
-		//Load properties file from file system which may store sensitive information.
+		/************************
+		 * Read in Properties	*
+		 ************************/
 		CalendarSyncProperties csp = null;
 		try {
-			csp = new CalendarSyncProperties("/Users/ttakahashi/Desktop/Projects/Self_Utilities/CalendarSyncProperties/creds.properties");
+			csp = new CalendarSyncProperties(CSConstants.CALENDARSYNC_PROPERTIES_FILENAME);
 			csp.loadFile();
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.out.println("Oh noooooo....");
 		}
 
+		/********************
+		 * Setup Logging	*
+		 ********************/
 		try {
 			CalendarSyncLogger.setup(Level.parse((String) csp.getProperties().getProperty(CSConstants.CSPROPERTY_LOG_LEVEL)));
 		} catch (IllegalArgumentException e) {
@@ -40,6 +52,27 @@ public class Driver {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
+		
+		/************************
+		 * Initialize Caching	*
+		 ************************/
+		
+		final String configFilename = CSConstants.CACHE_CONFIG_FILENAME;
+		if(configFilename != null)
+		{
+			Properties properties = new Properties();
+			try {
+				properties.load(new FileReader(configFilename));
+				CompositeCacheManager ccm = CompositeCacheManager.getUnconfiguredInstance();
+				ccm.configure(properties);
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 		
 		//Test Google Calendar

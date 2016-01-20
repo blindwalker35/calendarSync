@@ -57,7 +57,8 @@ public class GoogleCalendarDriver{
 
 	private void testGetCalendars(GoogleCalendar tc)
 	{
-		System.out.println(tc.getCalendars().toString(0));
+		//Dependent on getCalendars being public
+		//System.out.println(tc.getCalendars().toString(0));
 	}
 
 	private void testSetEventForDayOnCalendar(GoogleCalendar tc)
@@ -81,15 +82,16 @@ public class GoogleCalendarDriver{
 		
 		CSEvent event = new CSEvent(startDate, endDate, "Test Event Set", "Test Event Set", "");
 		
-		try {
-			tc.setEventForDayOnCalendar(event, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
-		} catch (GoogleCalendarDateFormatException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		//Dependent on setEventForDayOnCalendar being public
+//		try {
+//			tc.setEventForDayOnCalendar(event, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
+//		} catch (GoogleCalendarDateFormatException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
 	}
 	
 	

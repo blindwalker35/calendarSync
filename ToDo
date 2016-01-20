@@ -9,8 +9,9 @@ To do list:
 -Calendar updates - resync if event is out of date or has been updated recently
 -Caching
 	-Would have to do local file based caching first (maybe JSON or XML file)
-	-Eventually want to move cache to memory when application is deployed to server and persists.
+	-Eventually want to move cache to memory when application is deployed to server and persists. (Partially completed using JCS)
 		-Maybe even when application is deployed to server, on application shutdown have it export to a file and load up on startup?
+			-Have constructors read in the file, then push to cache automatically.
 		-Have option to delete / refresh cache - shouldn't need it with a proper cache check when settings events, but useful option for the possibility of a cache miss.
 -UI!!
 

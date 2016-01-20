@@ -177,7 +177,7 @@ public class GoogleCalendar extends CSCalendar{
 	 * 
 	 * @return The calendar object.
 	 */
-	public Calendar getCalendar()
+	private Calendar getCalendar()
 	{
 		LOGGER.finer("Retrieving calendar...");
 		return this.calendar;
@@ -188,7 +188,7 @@ public class GoogleCalendar extends CSCalendar{
 	 * 
 	 * @return The Java object containing calendar information
 	 */
-	public CalendarListJSON getCalendars()
+	private CalendarListJSON getCalendars()
 	{
 		LOGGER.finer("Retrieving calendars...");
 		try {
@@ -220,7 +220,7 @@ public class GoogleCalendar extends CSCalendar{
 	 * @throws ParseException	Thrown if the provided dates cannot be parsed into the expected date format.
 	 */
 	
-	public List<CSEvent> getEventsForRangeOfDatesOnCalendar(Date searchStartDate, Date searchEndDate) throws JsonSyntaxException, IOException, ParseException
+	private List<CSEvent> getEventsForRangeOfDatesOnCalendar(Date searchStartDate, Date searchEndDate) throws JsonSyntaxException, IOException, ParseException
 	{
 		LOGGER.finer("Getting events for range of dates on a calendar...");
 		
@@ -257,7 +257,7 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 
 	@SuppressWarnings("deprecation")
-	public void setEventForDayOnCalendar(CSEvent event, String calendarID) throws GoogleCalendarDateFormatException, IOException
+	private void setEventForDayOnCalendar(CSEvent event, String calendarID) throws GoogleCalendarDateFormatException, IOException
 	{
 		LOGGER.finer("Setting event for specified day on specified calendar...");
 		int litMonth, day, year;

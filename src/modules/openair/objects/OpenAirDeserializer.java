@@ -6,6 +6,11 @@ import org.apache.axis.message.SOAPHandler;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
+/**
+ * This custom deserializer is necessary to suppress OpenAir errors.
+ * @author ttakahashi
+ *
+ */
 public class OpenAirDeserializer extends BeanDeserializer {
 	public OpenAirDeserializer(java.lang.Class javaType, javax.xml.namespace.QName xmlType, org.apache.axis.description.TypeDesc typeDesc)
 	{

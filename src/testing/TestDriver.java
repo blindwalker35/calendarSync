@@ -58,6 +58,7 @@ public class TestDriver {
 		ArrayList<CSEvent> events = null;
 		try {
 			events = oac.getEvents(requestParamsOA);
+			events = oac.getEvents(requestParamsOA);
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

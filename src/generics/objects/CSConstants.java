@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 
 public class CSConstants {
 	
+	//CalendarSync constants
 	public static final int YEAR_CONSTANT = 1900;
 	public static final int MIN_YEAR = 2010;
 	public static final int MAX_YEAR = 2020;
@@ -44,5 +45,15 @@ public class CSConstants {
 	public static final int OPENAIR_RESPONSE_COUNT_LIMIT = 1000;
 	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_OPENAIR =  new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 	public static final String REQUEST_PARAM_OPENAIR_USERID = "OPENAIR_USERID";
+	
+	//Caching constants
+	public static final String CACHE_OPENAIR = "OPENAIR";
+	public static final String CACHE_OPENAIR_UID = CACHE_OPENAIR+"_USERID";
+	public static final String CACHE_OPENAIR_PROJECTID = CACHE_OPENAIR+"_PROJECT";
+	
+	//Testing Variables
+	public static final String CALENDARSYNC_PROPERTIES_FILENAME = "/Users/ttakahashi/Desktop/Projects/Self_Utilities/CalendarSyncProperties/creds.properties";
+	public static final String CACHE_CONFIG_FILENAME = "/Users/ttakahashi/Desktop/Projects/Self_Utilities/CalendarSyncProperties/cache.ccf";
+	
 	
 }
