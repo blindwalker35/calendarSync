@@ -30,11 +30,11 @@ public class TestDriver {
 	{
 		testOaToGoogle("78");
 	}
-	
+
 	//Test Cross Platform Functions
 	public void testOaToGoogle(String userID)
 	{
-		
+
 		OpenAirCalendarFactory oacf = new OpenAirCalendarFactory();
 		OpenAirCalendar oac = oacf.getInstanceOfOpenAirCalendar(this.properties);
 
@@ -48,14 +48,14 @@ public class TestDriver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		Map<String,String> requestParamsOA = new HashMap<String, String>();
 		requestParamsOA.put(CSConstants.REQUEST_PARAM_START_DATE, "2015-09-15 0:0:0");
 		requestParamsOA.put(CSConstants.REQUEST_PARAM_END_DATE, "2015-10-14 23:59:59");
 		requestParamsOA.put(CSConstants.REQUEST_PARAM_OPERATION_TYPE, CSOAOPERATIONS.BOOKINGS_BY_UID.value());
 		requestParamsOA.put(CSConstants.REQUEST_PARAM_OPENAIR_USERID, userID);
-		
-		ArrayList<CSEvent> events = null;
+
+		Map<String,CSEvent> events = null;
 		try {
 			events = oac.getEvents(requestParamsOA);
 			events = oac.getEvents(requestParamsOA);
@@ -63,14 +63,20 @@ public class TestDriver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		Map<String,String> requestParamsGoogle = new HashMap<String, String>();
-		requestParamsGoogle.put(CSConstants.REQUEST_PARAM_GOOGLE_CALENDAR_ID, this.properties.getProperties().getProperty(CSConstants.CSPROPERTY_CALENDARNAME));
+
+		gc.setEvents(events.values(), requestParamsGoogle);
+
+		Map<String,String> requestParams = new HashMap<String, String>();
+		requestParams.put(CSConstants.REQUEST_PARAM_START_DATE, "2015-09-13T00:00:00.000-0500");
+		requestParams.put(CSConstants.REQUEST_PARAM_END_DATE, "2015-10-15T23:59:59.999-0500");
 		
-		for(CSEvent event: events)
+		events = gc.getEvents(requestParams);
+		for(CSEvent event: events.values())
 		{
-			gc.setEvent(event, requestParamsGoogle);
+			System.out.println(event.toString());
 		}
-		
+
 	}
 }

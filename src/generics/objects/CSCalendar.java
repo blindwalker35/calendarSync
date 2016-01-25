@@ -5,6 +5,7 @@ import generics.exceptions.CSCalendarEventOverlapsException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -24,7 +25,7 @@ public abstract class CSCalendar{
 	 * @return A parsed event object from the calendar.
 	 */
 	
-	public abstract ArrayList<CSEvent> getEvents(Map<String,String> requestParams) throws ParseException ;
+	public abstract Map<String, CSEvent> getEvents(Map<String,String> requestParams) throws ParseException ;
 	
 	/**
 	 * Set an event for the given calendar.
@@ -33,4 +34,5 @@ public abstract class CSCalendar{
 	 * @param requestParams 
 	 */
 	public abstract void setEvent(CSEvent event, Map<String, String> requestParams);
+	public abstract void setEvents(Collection<CSEvent> events, Map<String, String> requestParams);
 }

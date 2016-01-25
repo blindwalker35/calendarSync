@@ -15,8 +15,10 @@ import java.io.StringWriter;
 import java.security.GeneralSecurityException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -34,6 +36,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
+import com.google.api.services.calendar.Calendar.Events.Update;
 import com.google.api.services.calendar.model.*;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -103,8 +106,8 @@ public class GoogleCalendar extends CSCalendar{
 	private Calendar calendar;
 	private final String CALENDAR_NAME;
 	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
+	private Map<String, String> eventIDMap;
 
-	
 	public GoogleCalendar(CalendarSyncProperties csp) throws GeneralSecurityException, IOException
 	{		
 		LOGGER.info("Initializing GoogleCalendar module...");
@@ -113,7 +116,7 @@ public class GoogleCalendar extends CSCalendar{
 		this.CALENDAR_NAME = csp.getProperties().getProperty(CSConstants.CSPROPERTY_CALENDARNAME);
 		setup(clientID, clientSecret);
 		LOGGER.info("Initialized GoogleCalendar module...");
-		
+		this.eventIDMap = new HashMap<String, String>();
 	}
 
 	/**
@@ -127,7 +130,7 @@ public class GoogleCalendar extends CSCalendar{
 
 	private void setup(String clientID, String clientSecret) throws GeneralSecurityException, IOException
 	{
-		
+
 		LOGGER.finer("Setting up authentication and authorization...");
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 		JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
@@ -143,7 +146,7 @@ public class GoogleCalendar extends CSCalendar{
 		LOGGER.finest("Requesting authorization...");
 		String authorizationUrl = flow.newAuthorizationUrl().setRedirectUri(redirectUrl).build();
 
-		
+
 		// Point or redirect your user to the authorizationUrl.
 		System.out.println("Go to the following link in your browser:");
 		System.out.println(authorizationUrl);
@@ -158,7 +161,7 @@ public class GoogleCalendar extends CSCalendar{
 		GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUrl).execute();
 		// End of Step 2
 		LOGGER.finest("Authorized user...");
-		
+
 		Credential credential = new GoogleCredential.Builder()
 		.setTransport(httpTransport)
 		.setJsonFactory(jsonFactory)
@@ -167,9 +170,9 @@ public class GoogleCalendar extends CSCalendar{
 
 		this.calendar = new Calendar.Builder(httpTransport, jsonFactory, credential).setApplicationName(this.APPLICATION_NAME).build();
 		LOGGER.finer("Finished authentication and authorization...");
-		
+
 		System.out.println("Done authentication and authorization...");
-		
+
 	}
 
 	/**
@@ -183,30 +186,30 @@ public class GoogleCalendar extends CSCalendar{
 		return this.calendar;
 	}
 
-	/**
-	 * Gets all calendars for the user specified during setup
-	 * 
-	 * @return The Java object containing calendar information
-	 */
-	private CalendarListJSON getCalendars()
-	{
-		LOGGER.finer("Retrieving calendars...");
-		try {
-			CalendarList calendars = this.calendar.calendarList().list().execute();
-			Gson gson = new Gson();
-			LOGGER.finest("Converting JSON object to Java CalendarListJSON object...");
-			return gson.fromJson(calendars.toString(), CalendarListJSON.class);
-
-		} catch (IOException e) 
-		{
-			StringWriter errors = new StringWriter();
-			e.printStackTrace(new PrintWriter(errors));
-			
-			LOGGER.severe("IOException occurred trying to get all calendars: \n" + e.toString());
-			return null;
-		}
-		
-	}
+	//	/**
+	//	 * Gets all calendars for the user specified during setup
+	//	 * 
+	//	 * @return The Java object containing calendar information
+	//	 */
+	//	private CalendarListJSON getCalendars()
+	//	{
+	//		LOGGER.finer("Retrieving calendars...");
+	//		try {
+	//			CalendarList calendars = this.calendar.calendarList().list().execute();
+	//			Gson gson = new Gson();
+	//			LOGGER.finest("Converting JSON object to Java CalendarListJSON object...");
+	//			return gson.fromJson(calendars.toString(), CalendarListJSON.class);
+	//
+	//		} catch (IOException e) 
+	//		{
+	//			StringWriter errors = new StringWriter();
+	//			e.printStackTrace(new PrintWriter(errors));
+	//
+	//			LOGGER.severe("IOException occurred trying to get all calendars: \n" + e.toString());
+	//			return null;
+	//		}
+	//
+	//	}
 
 	/**
 	 * Gets all events listed on a calendar for a given day of the year.
@@ -219,11 +222,11 @@ public class GoogleCalendar extends CSCalendar{
 	 * @throws IOException 	Thrown if various HTTP requests cannot be completed.
 	 * @throws ParseException	Thrown if the provided dates cannot be parsed into the expected date format.
 	 */
-	
+
 	private List<CSEvent> getEventsForRangeOfDatesOnCalendar(Date searchStartDate, Date searchEndDate) throws JsonSyntaxException, IOException, ParseException
 	{
 		LOGGER.finer("Getting events for range of dates on a calendar...");
-		
+
 		LOGGER.finest("Getting list of events from calendar...");
 		Gson gson = new Gson();
 		CalendarListEntryJSON calendarListEntry = gson.fromJson(this.calendar.calendarList().get(this.CALENDAR_NAME).execute().toPrettyString(), CalendarListEntryJSON.class);
@@ -237,14 +240,18 @@ public class GoogleCalendar extends CSCalendar{
 		 * */
 		LOGGER.finest("Applying search filter on events...");
 		List<CSEvent> retEvents = new ArrayList<CSEvent>();
+		CSEvent retEvent;
+		
 		for(Event event: events.getItems())
 		{
 			if(isEventBetweenDates(searchStartDate, searchEndDate, event))
 			{
-				retEvents.add(convertEventToCSEvent(event));
+				retEvent = convertEventToCSEvent(event);
+				retEvents.add(retEvent);
+				this.eventIDMap.put(retEvent.getUniqueIdentifier(), event.getId());
 			}
 		}
-		
+
 		return retEvents;
 	}
 
@@ -257,19 +264,20 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 
 	@SuppressWarnings("deprecation")
-	private void setEventForDayOnCalendar(CSEvent event, String calendarID) throws GoogleCalendarDateFormatException, IOException
+	private void setEventForDayOnCalendar(CSEvent event) throws GoogleCalendarDateFormatException, IOException
 	{
 		LOGGER.finer("Setting event for specified day on specified calendar...");
 		int litMonth, day, year;
-		
+
 		Date date = event.getStartDate();
 		litMonth = date.getMonth();
 		CSMONTHS temp = CSMONTHS.JAN;	//don't ask...
 		CSMONTHS month = temp.getMonthWithValue(litMonth);
 		day = date.getDate();
 		year = date.getYear()+CSConstants.YEAR_CONSTANT;
-		
+
 		//Check to make sure the provided values are valid
+
 		if(!CalendarSyncHelper.isValidDay(month, day, year))
 		{
 			throw new GoogleCalendarDateFormatException("Invalid month, day, or year provided...");
@@ -277,9 +285,26 @@ public class GoogleCalendar extends CSCalendar{
 
 		LOGGER.finer("Converting specified CSEvent object to an Event object...");
 		Event converted = convertCSEventToEvent(event);
-		Event createdEvent = this.calendar.events().insert(calendarID, converted).execute();
+
+		Event setEvent, modifiedEvent;
+		CSEvent modifiedCSEvent;
 		
-		//Don't have to do anything with createdEvent but in case any post operations are to be performed...
+		//Compare event against existing event, modify if necessary
+		if(this.eventIDMap.containsKey(event.getUniqueIdentifier()))
+		{
+			modifiedCSEvent = new CSEvent(event.getStartDate(), event.getEndDate(),
+					event.getSubject(), event.getDescription(), event.getUniqueIdentifier());
+			modifiedEvent = convertCSEventToEvent(modifiedCSEvent);
+			
+			setEvent = this.calendar.events().update(this.CALENDAR_NAME, this.eventIDMap.get(modifiedCSEvent.getUniqueIdentifier()), modifiedEvent).execute();
+			
+		}else
+		{
+			//Don't have to do anything with createdEvent but in case any post operations are to be performed...
+			setEvent = this.calendar.events().insert(this.CALENDAR_NAME, converted).execute();
+		}
+
+
 	}
 
 	/**
@@ -293,6 +318,24 @@ public class GoogleCalendar extends CSCalendar{
 	 */
 	private boolean isEventBetweenDates(Date startDate, Date endDate, Event event) throws ParseException
 	{
+
+		/*
+		 * Logic here should be the following:
+		 * 					Search Dates
+		 *    ............|########################|...........
+		 * 1) .|############|.................................. Valid
+		 * 2) ....................................|##########|. Valid
+		 * 3) ..................|#############|................ Valid
+		 * 4) .|#############################################|. Valid
+		 * 5) |#####|.......................................... Invalid
+		 * 6) ...........................................|####| Invalid
+		 * 7) .|############################################### Valid
+		 * 8) ################################################# Valid
+		 * 9) #################################|............... Valid
+		 * 10).........................................|####### Invalid
+		 * 
+		 */
+
 		LOGGER.finer("Checking if event is between specified dates...");
 		EventDateTime eventStart = null, eventEnd = null;
 
@@ -306,27 +349,56 @@ public class GoogleCalendar extends CSCalendar{
 			strStartDate = eventStart.getDateTime().toString();
 			strStartDate = strStartDate.replaceAll(":(\\d\\d)$", "$1");
 			eventStartDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(strStartDate);
-			//check if event starts after the provided date
-			if(eventStartDate.after(startDate))
+
+			strEndDate = eventEnd.getDateTime().toString();
+			strEndDate = strEndDate.replaceAll(":(\\d\\d)$", "$1");
+			eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(strEndDate);
+
+			if(startDate != null)
 			{
-				if(eventEnd != null)
+				//If event starts before the search date, have to filter for criteria 1, 4, 5, 7
+				if(eventStartDate.before(startDate))
 				{
-					strEndDate = eventEnd.getDateTime().toString();
-					strEndDate = strEndDate.replaceAll(":(\\d\\d)$", "$1");
-					eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(strEndDate);
+					//7 - Event starts before search start date but never ends
+					if(endDate == null){return true;}
+
+					//1,5
 					if(eventEndDate.before(endDate))
+					{
+						if(eventEndDate.before(startDate))
+						{
+							//5 - event starts and ends before search start date
+							return false;
+						}else
+						{
+							//1 - Event starts before search start date, but ends after startDante and before search endDate
+							return true;
+						}
+					}else
+					{
+						//4 The event starts before the search start date and ends after the search end date
+						return true;
+					}
+				}else //Event starts after the start date, have to filter for criteria 2, 3, 6
+				{
+					//2,3 - If event starts before end date and starts after the search start date, then occurs within range
+					if(eventStartDate.before(endDate))
 					{
 						return true;
 					}else
 					{
+						//6 - Event starts after search start date and search end date
 						return false;
 					}
-				}else
-				{
-					return true;
 				}
+			}else
+			{
+				if(endDate == null){return true;} //8 no event search start or end date provided
+				if(eventStartDate.after(endDate)){return false;} //10 - event starts after the serach end date
+				return true; //9 - event starts before the search end date
 			}
 		}
+		//If no start date, not a real event
 		return false;
 	}
 
@@ -358,7 +430,25 @@ public class GoogleCalendar extends CSCalendar{
 			eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(event.getEnd().getDateTime().toString().replaceAll(":(\\d\\d)$", "$1"));
 		}
 
-		return new CSEvent(eventStartDate, eventEndDate, event.getSummary(), event.getDescription(), "");
+		//Get uniqueEventID
+		String[] mappings;
+		try
+		{
+			mappings = event.getDescription().split("\n\n");
+		}catch(NullPointerException e){mappings = new String[0];}
+
+		String[] entry;
+		String uniqueEventID = null;
+		for(String map: mappings)
+		{
+			entry = map.split(CSConstants.EVENT_KEY_VALUE_DELIMITER);
+			if(entry != null && entry[0] != null)
+			{
+				if(entry[0].equals(CSConstants.UNIQUE_EVENT_ID)){uniqueEventID = entry[1].trim(); break;}
+			}
+		}
+
+		return new CSEvent(eventStartDate, eventEndDate, event.getSummary(), event.getDescription(), uniqueEventID);
 	}
 
 	/**
@@ -382,40 +472,46 @@ public class GoogleCalendar extends CSCalendar{
 		EventDateTime eventStart = new EventDateTime();
 		eventStart.setDateTime(startDateTime);
 		event.setStart(eventStart);
-		
+
 		DateTime endDateTime = new DateTime(csevent.getEndDate());
 		EventDateTime eventEnd = new EventDateTime();
 		eventEnd.setDateTime(endDateTime);
 		event.setEnd(eventEnd);
-		
+
 		event.setDescription(csevent.getDescription());
 		event.setSummary(csevent.getSubject());
-		
+
 		return event;
 	}
 
 	/**
 	 * Implementation of abstract method from parent class - CSCalendar.
 	 */
-	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException 
+	public Map<String, CSEvent> getEvents(Map<String, String> requestParams)
 	{
 		LOGGER.finer("Getting events based on request parameters...");
-		
-		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
-		Date eventStartDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
-		Date eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
-		
-		/**
-		 * This loop iterates through the dates in the range provided using the datePlusOne method.
-		 * Because I'm an idiot, you have to instantiate a CSMONTHS object to "generate" a new month so a singleton is used.
-		 */
-		for(Date currDate = eventStartDate; currDate.before(eventEndDate); currDate = 
-				CalendarSyncHelper.datePlusOne(CSConstants.CSMONTHS_SNGL.getMonthWithValue(currDate.getMonth()+1), currDate.getDate(), currDate.getYear()+CSConstants.YEAR_CONSTANT))
+
+		//ArrayList<CSEvent> events = new ArrayList<CSEvent>();
+		Map<String, CSEvent> retEvents = new HashMap<String, CSEvent>();
+
+		try
 		{
+			Date eventStartDate, eventEndDate;
+
+			try
+			{
+				eventStartDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
+			}catch (NullPointerException e){eventStartDate = null;}
+
+			try
+			{
+				eventEndDate = CSConstants.SIMPLE_DATE_FORMAT_GOOGLE.parse(requestParams.get(CSConstants.REQUEST_PARAM_END_DATE));
+			}catch (NullPointerException e){eventEndDate = null;}
+
 			try {
 				for(CSEvent dayEvent: getEventsForRangeOfDatesOnCalendar(eventStartDate, eventEndDate))
 				{
-					events.add(dayEvent);
+					retEvents.put(dayEvent.getUniqueIdentifier(), dayEvent);
 				}
 			} catch (JsonSyntaxException e) {
 				StringWriter errors = new StringWriter();
@@ -426,18 +522,23 @@ public class GoogleCalendar extends CSCalendar{
 				e.printStackTrace(new PrintWriter(errors));
 				LOGGER.severe("IOException occurred trying to get all events from calendar: \n" + e.toString());
 			}
+		} catch (ParseException e)
+		{
+			StringWriter errors = new StringWriter();
+			e.printStackTrace(new PrintWriter(errors));
+			LOGGER.severe("ParseException occurred trying to parse dates: \n" + e.toString());
 		}
-			
-		return events;
+		return retEvents;
 	}
-
+	
 	/**
 	 * Implementation of abstract method from parent class - CSCalendar.
 	 */
 	public void setEvent(CSEvent event, Map<String, String> requestParams){
 		LOGGER.finer("Setting event based on request parameters...");
 		try {
-			setEventForDayOnCalendar(event, requestParams.get(CSConstants.REQUEST_PARAM_GOOGLE_CALENDAR_ID));
+			//Set event
+			setEventForDayOnCalendar(event);
 		} catch (GoogleCalendarDateFormatException e) {
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
@@ -446,6 +547,28 @@ public class GoogleCalendar extends CSCalendar{
 			StringWriter errors = new StringWriter();
 			e.printStackTrace(new PrintWriter(errors));
 			LOGGER.severe("IOException occurred trying to get all events from calendar: \n" + e.toString());
+		}
+	}
+
+	public void setEvents(Collection<CSEvent> events, Map<String, String> requestParams)
+	{
+		if(events == null)
+		{
+			LOGGER.info("No events provided, returning...");
+			return;
+		}
+		
+		LOGGER.finest("Getting all events for duplication and moficiation check...");
+		//get events to do a duplication check - search filter is null to get all events
+		Map<String,String> getRequestParams = new HashMap<String, String>();
+		requestParams.put(CSConstants.REQUEST_PARAM_START_DATE, null);
+		requestParams.put(CSConstants.REQUEST_PARAM_END_DATE, null);
+		getEvents(requestParams);
+		
+		LOGGER.finest("Setting events...");
+		for(CSEvent event: events)
+		{
+			setEvent(event, requestParams);
 		}
 	}
 }

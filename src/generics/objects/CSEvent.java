@@ -36,5 +36,15 @@ public class CSEvent {
 	public String getSubject(){return this.subject;}
 	public String getDescription(){return this.description;}
 	public String getUniqueIdentifier(){return this.uniqueIdentifier;}
+	public String toString()
+	{
+		String retString = "";
+		retString += "StartDate: " + this.startDate + "\n";
+		retString += "EndDate: " + this.endDate + "\n";
+		retString += "Subject: " + this.subject + "\n";
+		retString += "Description: " + this.description + "\n";
+		retString += "uniqieEventID: " + this.uniqueIdentifier + "\n";
+		return retString;
+	}
 	
 }

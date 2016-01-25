@@ -8,7 +8,7 @@ public class CSConstants {
 	public static final int YEAR_CONSTANT = 1900;
 	public static final int MIN_YEAR = 2010;
 	public static final int MAX_YEAR = 2020;
-	public static final CSMONTHS CSMONTHS_SNGL = CSMONTHS.JAN;
+//	public static final CSMONTHS CSMONTHS_SNGL = CSMONTHS.JAN;
 	public static final String UNIQUE_EVENT_ID = "uniqueEventID";
 	public static final String EVENT_DESCRIPTION_DELIMITER = "\n\n";
 	public static final String EVENT_KEY_VALUE_DELIMITER = ":";
@@ -36,7 +36,6 @@ public class CSConstants {
 	public static final String REQUEST_PARAM_GOOGLE_CALENDAR_ID = "CALENDAR_ID";
 	
 	//Google constants
-	//The date format that will be used
 	public static final SimpleDateFormat SIMPLE_DATE_FORMAT_GOOGLE =  new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
 	
 	//OpenAir constants

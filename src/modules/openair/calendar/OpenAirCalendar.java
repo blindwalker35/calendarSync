@@ -8,7 +8,9 @@ import java.io.StringWriter;
 import java.rmi.RemoteException;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -470,7 +472,7 @@ public class OpenAirCalendar extends CSCalendar{
 				String bookingURL = generateBookingURL(resBooking.getId());
 
 				LOGGER.finest("Generating CSEvent object....");
-				uniqueID = CalendarSyncHelper.generateUniqueID(CSConstants.OA_CONVERSION_TYPE, resBooking.getId());
+				uniqueID = CSConstants.OA_CONVERSION_TYPE + resBooking.getId();
 
 				description += CalendarSyncHelper.generateDescription("Access Booking at", bookingURL);
 				description += CalendarSyncHelper.generateDescription("Access Project at", projectURL);
@@ -495,12 +497,12 @@ public class OpenAirCalendar extends CSCalendar{
 	 * @param searchEndDate The date to finish looking for events from.
 	 * @return An array of all CSEvents that fit the search filter.
 	 */
-	private ArrayList<CSEvent> parseCalendarResults(ReadResult[] results, Date searchStartDate, Date searchEndDate)
+	private Map<String,CSEvent> parseCalendarResults(ReadResult[] results, Date searchStartDate, Date searchEndDate)
 	{
 		LOGGER.finer("Parsing calendar results...");
 		CSEvent event = null;
 		String responseObjectType;
-		ArrayList<CSEvent> events = new ArrayList<CSEvent>();
+		Map<String, CSEvent> events = new HashMap<String, CSEvent>();
 
 		/*
 		 * Iterate through each result in the response array. Each result can contain multiple search results.
@@ -521,7 +523,7 @@ public class OpenAirCalendar extends CSCalendar{
 						event = parseOaBooking((OaBooking) object, searchStartDate, searchEndDate);
 						if(event != null)
 						{
-							events.add(event);
+							events.put(event.getUniqueIdentifier(), event);
 						}
 					}
 				}
@@ -537,7 +539,7 @@ public class OpenAirCalendar extends CSCalendar{
 	 * @return An arrayList of CSEvent objects containing an even that fits the requestParam parameters
 	 * @throws ParseException thrown if the provided date cannot be parsed.
 	 */
-	private ArrayList<CSEvent> getBookingsByUserID(Map<String, String> requestParams) throws ParseException
+	private Map<String, CSEvent> getBookingsByUserID(Map<String, String> requestParams) throws ParseException
 	{
 		LOGGER.finer("Getting OaBookings based on user ID...");
 		Date searchStartDate = CSConstants.SIMPLE_DATE_FORMAT_OPENAIR.parse(requestParams.get(CSConstants.REQUEST_PARAM_START_DATE));
@@ -557,7 +559,7 @@ public class OpenAirCalendar extends CSCalendar{
 	 * @param requestParams The map object containing all parameters regarding the request.
 	 * @return ArrayList<CSEvent> an arrayList of all events retrieved that match the description from requestParams.
 	 */
-	public ArrayList<CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
+	public Map<String,CSEvent> getEvents(Map<String, String> requestParams) throws ParseException {
 		LOGGER.finer("Getting all events based on request parameters...");
 
 		String operationType = requestParams.get(CSConstants.REQUEST_PARAM_OPERATION_TYPE);
@@ -576,6 +578,10 @@ public class OpenAirCalendar extends CSCalendar{
 		//Not yet implemented
 	}
 
-
+	@Override
+	public void setEvents(Collection<CSEvent> events, Map<String, String> requestParams) {
+		// TODO Auto-generated method stub
+		//Not yet implemented
+	}
 
 }

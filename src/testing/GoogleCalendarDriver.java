@@ -26,9 +26,9 @@ public class GoogleCalendarDriver{
 	private CalendarSyncProperties properties;
 	private final static Logger LOGGER = Logger.getLogger(Logger.GLOBAL_LOGGER_NAME);
 
-	
+
 	public GoogleCalendarDriver(CalendarSyncProperties properties){this.properties = properties;}
-	
+
 	public void execute()
 	{
 		// The clientId and clientSecret can be found in Google Developers Console
@@ -38,14 +38,14 @@ public class GoogleCalendarDriver{
 		 */
 		String clientID = this.properties.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTID).toString();
 		String clientSecret = this.properties.getProperties().getProperty(CSConstants.CSPROPERTY_CLIENTSECRET).toString();
-		
+
 		System.out.println("Testing...");
-		
+
 		GoogleCalendar tc = null;
 		try {
 			//tc = new GoogleCalendar(clientID, clientSecret, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
 			tc = new GoogleCalendar(this.properties);
-			//testGetCalendars(tc);
+			//			testGetCalendars(tc);
 			//testSetEventForDayOnCalendar(tc);
 			testAbstractMethodGetEvents(tc);
 		} catch (GeneralSecurityException e) {
@@ -63,7 +63,7 @@ public class GoogleCalendarDriver{
 
 	private void testSetEventForDayOnCalendar(GoogleCalendar tc)
 	{
-		
+
 		Date startDate = new Date();
 		startDate.setDate(2);
 		startDate.setMonth(5);
@@ -71,7 +71,7 @@ public class GoogleCalendarDriver{
 		startDate.setHours(11);
 		startDate.setMinutes(0);
 		startDate.setSeconds(0);
-		
+
 		Date endDate = new Date();
 		endDate.setDate(2);
 		endDate.setMonth(5);
@@ -79,41 +79,37 @@ public class GoogleCalendarDriver{
 		endDate.setHours(12);
 		endDate.setMinutes(0);
 		endDate.setSeconds(0);
-		
+
 		CSEvent event = new CSEvent(startDate, endDate, "Test Event Set", "Test Event Set", "");
-		
+
 		//Dependent on setEventForDayOnCalendar being public
-//		try {
-//			tc.setEventForDayOnCalendar(event, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
-//		} catch (GoogleCalendarDateFormatException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
+		//		try {
+		//			tc.setEventForDayOnCalendar(event, "fv0s9pc0flso5l8c6i4o0i1sig@group.calendar.google.com");
+		//		} catch (GoogleCalendarDateFormatException e) {
+		//			// TODO Auto-generated catch block
+		//			e.printStackTrace();
+		//		} catch (IOException e) {
+		//			// TODO Auto-generated catch block
+		//			e.printStackTrace();
+		//		}
 	}
-	
-	
+
+
 	/**
 	 * Tests the implementation of the abstract method "getEvents".
 	 * @param tc
 	 */
-	
+
 	private void testAbstractMethodGetEvents(GoogleCalendar tc)
 	{
 		Map<String,String> requestParams = new HashMap<String, String>();
 		requestParams.put(CSConstants.REQUEST_PARAM_START_DATE, "2015-06-02T00:00:00.000-0500");
 		requestParams.put(CSConstants.REQUEST_PARAM_END_DATE, "2015-06-02T23:59:59.999-0500");
-		ArrayList<CSEvent> events = null;
-		try {
-			events = tc.getEvents(requestParams);
-		} catch (ParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		for(CSEvent event: events)
+		Map<String, CSEvent> events = null;
+
+		events = tc.getEvents(requestParams);
+
+		for(CSEvent event: events.values())
 		{
 			System.out.println("Subject: " + event.getSubject());
 			System.out.println("Description: " + event.getDescription());

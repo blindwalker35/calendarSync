@@ -145,7 +145,7 @@ public class OpenAirDriver {
 		requestParams.put(CSConstants.REQUEST_PARAM_OPERATION_TYPE, CSOAOPERATIONS.BOOKINGS_BY_UID.value());
 		requestParams.put(CSConstants.REQUEST_PARAM_OPENAIR_USERID, userID);
 		
-		ArrayList<CSEvent> events = null;
+		Map<String, CSEvent> events = null;
 		try {
 			events = oac.getEvents(requestParams);
 		} catch (ParseException e) {
@@ -154,7 +154,7 @@ public class OpenAirDriver {
 		}
 		
 		System.out.println("Reading events...");
-		for(CSEvent event: events)
+		for(CSEvent event: events.values())
 		{
 			System.out.println("Subject: " + event.getSubject());
 			System.out.println("Description: " + event.getDescription());

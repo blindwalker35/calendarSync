@@ -178,10 +178,6 @@ public class CalendarSyncHelper {
 		return true;
 	}
 	
-	public static String generateUniqueID(String type, String uniqueIdentifier)
-	{
-		return CSConstants.EVENT_KEY_VALUE_DELIMITER+ " " + type+ uniqueIdentifier;
-	}
 	public static String generateDescription(String descriptionKey, String descriptionValue)
 	{
 		return CSConstants.EVENT_DESCRIPTION_DELIMITER + descriptionKey + CSConstants.EVENT_KEY_VALUE_DELIMITER + " " +  descriptionValue;
