@@ -1,4 +1,6 @@
 To do list:
+-Separate authentication from implementation of GoogleCalendar - allows for reuse of authentication
+	-Create a mapping of accounts to calendars owned by accounts
 -Logout functionality? Pretty low on priority
 -If batch requests goes over the CSConstants limit, start generating a second (or more) request to send out.
 -Duplicate event checks in setEvents method
@@ -13,6 +15,8 @@ To do list:
 			-Have constructors read in the file, then push to cache automatically.
 		-Have option to delete / refresh cache - shouldn't need it with a proper cache check when settings events, but useful option for the possibility of a cache miss.
 -UI!!
+-Configuration Manager
+	-Actually implement GoogleFilter and OpenAirFilter
 
 Potential Bottlenecks:
 -When making requests to OpenAir to pull down bookings, the current method is pulling ALL bookings for a user, then applying a filter locally on the client.
@@ -28,3 +32,8 @@ Feature List:
 -Configuration Manager
 	-Store mappings of events to calendars
 		-Create a filter interface for each calendar to map configuration?
+		
+		
+ConfigurationManager:
+1)Instantiate OpenAirCalendar and GoogleCalendar
+	-Instantiated on a per calendar basis

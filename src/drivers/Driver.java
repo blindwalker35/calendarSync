@@ -14,6 +14,9 @@ import org.apache.jcs.JCS;
 import org.apache.jcs.access.exception.CacheException;
 import org.apache.jcs.engine.control.CompositeCacheManager;
 
+import configuration.manager.UserConfigurationManager;
+import configuration.xml.XMLReader;
+import configuration.xml.XMLWriter;
 import logging.CalendarSyncLogger;
 import modules.google.calendar.GoogleCalendar;
 import modules.openair.calendar.OpenAirCalendar;
@@ -21,6 +24,7 @@ import testing.CalendarSyncProperties;
 import testing.GoogleCalendarDriver;
 import testing.OpenAirDriver;
 import testing.TestDriver;
+import testing.XMLWriterDriver;
 
 
 public class Driver {
@@ -75,6 +79,12 @@ public class Driver {
 			}
 		}
 		
+		/****************************
+		 * Read in Configuration	*
+		 ****************************/
+		
+		UserConfigurationManager configurationManager = XMLReader.readConfigurationManager(CSConstants.XML_WRITER_FILENAME);
+		
 		/****************
 		 * Execution	*
 		 ****************/
@@ -90,6 +100,16 @@ public class Driver {
 		//Test Cross Platform
 		TestDriver td = new TestDriver(csp);
 		td.execute();
+		
+		//Test XML Writer
+		XMLWriterDriver xmlDriver = new XMLWriterDriver();
+		xmlDriver.execute();
 
+		
+		/************************************
+		 * Export existing Configuration	*
+		 ************************************/
+		
+		XMLWriter.writeConfigurationManager(configurationManager, CSConstants.XML_WRITER_FILENAME);
 	}	
 }

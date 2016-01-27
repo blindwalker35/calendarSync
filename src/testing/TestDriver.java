@@ -68,15 +68,5 @@ public class TestDriver {
 
 		gc.setEvents(events.values(), requestParamsGoogle);
 
-		Map<String,String> requestParams = new HashMap<String, String>();
-		requestParams.put(CSConstants.REQUEST_PARAM_START_DATE, "2015-09-13T00:00:00.000-0500");
-		requestParams.put(CSConstants.REQUEST_PARAM_END_DATE, "2015-10-15T23:59:59.999-0500");
-		
-		events = gc.getEvents(requestParams);
-		for(CSEvent event: events.values())
-		{
-			System.out.println(event.toString());
-		}
-
 	}
 }
