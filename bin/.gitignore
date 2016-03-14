@@ -1,5 +1,6 @@
-/drivers
-/testing
-/modules
-/generics
 /configuration
+/drivers
+/generics
+/logging
+/modules
+/testing

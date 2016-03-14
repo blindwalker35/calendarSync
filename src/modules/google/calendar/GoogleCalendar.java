@@ -130,7 +130,6 @@ public class GoogleCalendar extends CSCalendar{
 
 	private void setup(String clientID, String clientSecret) throws GeneralSecurityException, IOException
 	{
-
 		LOGGER.finer("Setting up authentication and authorization...");
 		HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 		JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
@@ -161,7 +160,7 @@ public class GoogleCalendar extends CSCalendar{
 		GoogleTokenResponse response = flow.newTokenRequest(code).setRedirectUri(redirectUrl).execute();
 		// End of Step 2
 		LOGGER.finest("Authorized user...");
-
+		
 		Credential credential = new GoogleCredential.Builder()
 		.setTransport(httpTransport)
 		.setJsonFactory(jsonFactory)

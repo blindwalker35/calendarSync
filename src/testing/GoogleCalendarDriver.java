@@ -60,7 +60,7 @@ public class GoogleCalendarDriver{
 		//Dependent on getCalendars being public
 		//System.out.println(tc.getCalendars().toString(0));
 	}
-
+	
 	private void testSetEventForDayOnCalendar(GoogleCalendar tc)
 	{
 
@@ -103,8 +103,8 @@ public class GoogleCalendarDriver{
 	private void testAbstractMethodGetEvents(GoogleCalendar tc)
 	{
 		Map<String,String> requestParams = new HashMap<String, String>();
-		requestParams.put(CSConstants.REQUEST_PARAM_START_DATE, "2015-06-02T00:00:00.000-0500");
-		requestParams.put(CSConstants.REQUEST_PARAM_END_DATE, "2015-06-02T23:59:59.999-0500");
+		requestParams.put(CSConstants.REQUEST_PARAM_START_DATE, "2016-03-14T00:00:00.000-0500");
+		requestParams.put(CSConstants.REQUEST_PARAM_END_DATE, "2016-03-15T23:59:59.999-0500");
 		Map<String, CSEvent> events = null;
 
 		events = tc.getEvents(requestParams);

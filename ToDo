@@ -17,6 +17,7 @@ To do list:
 -UI!!
 -Configuration Manager
 	-Actually implement GoogleFilter and OpenAirFilter
+	-Turn into UserConfigManager - store users, with users holding onto the config
 
 Potential Bottlenecks:
 -When making requests to OpenAir to pull down bookings, the current method is pulling ALL bookings for a user, then applying a filter locally on the client.

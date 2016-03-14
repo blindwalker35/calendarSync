@@ -90,20 +90,20 @@ public class Driver {
 		 ****************/
 		
 		//Test Google Calendar
-//		GoogleCalendarDriver gcd = new GoogleCalendarDriver(csp);
-//		gcd.execute();
+		GoogleCalendarDriver gcd = new GoogleCalendarDriver(csp);
+		gcd.execute();
 		
 		//Test Open Air
 //		OpenAirDriver oad = new OpenAirDriver(csp);
 //		oad.execute();
 		
 		//Test Cross Platform
-		TestDriver td = new TestDriver(csp);
-		td.execute();
+//		TestDriver td = new TestDriver(csp);
+//		td.execute();
 		
 		//Test XML Writer
-		XMLWriterDriver xmlDriver = new XMLWriterDriver();
-		xmlDriver.execute();
+//		XMLWriterDriver xmlDriver = new XMLWriterDriver();
+//		xmlDriver.execute();
 
 		
 		/************************************
